@@ -98,7 +98,8 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
   lodgeSmoke.rate = 4;
   const lodgeRot = faceLake(lodgeX, lodgeZ);
   porchLight(scene, lodge.group.localToWorld(new THREE.Vector3(-1.0, 2.5, -4.62)), lodgeRot);
-  woodpile(scene, world, lodgeX + 9.2 * Math.cos(lodgeRot), lodgeZ - 9.2 * Math.sin(lodgeRot), lodgeRot);
+  // Woodpile on the lodge's left side; the Ice Hostel takes the roomier right side.
+  woodpile(scene, world, lodgeX - 9.2 * Math.cos(lodgeRot), lodgeZ + 9.2 * Math.sin(lodgeRot), lodgeRot);
 
   [-46, -35, 24, 35, 46].forEach((x, i) => {
     const z = shoreZ(x) + 13 + (i % 2) * 3;
@@ -115,10 +116,10 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
 
   const spawnX = 2;
   const spawn = new THREE.Vector3(spawnX, 0, shoreZ(spawnX) + 14);
-  // Ice Hostel: on the lodge's left side (lodge-local x = −13, slightly back), facing the lake.
+  // Ice Hostel: on the lodge's right side (lodge-local x = +14, slightly back), facing the lake.
   const igloo = {
-    x: lodgeX - 13 * Math.cos(lodgeRot) + 1 * Math.sin(lodgeRot),
-    z: lodgeZ + 13 * Math.sin(lodgeRot) + 1 * Math.cos(lodgeRot),
+    x: lodgeX + 14 * Math.cos(lodgeRot) + 1 * Math.sin(lodgeRot),
+    z: lodgeZ - 14 * Math.sin(lodgeRot) + 1 * Math.cos(lodgeRot),
     rot: lodgeRot,
   };
   clearings.push({ x: igloo.x, z: igloo.z, r: 8 });

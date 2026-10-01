@@ -29,21 +29,28 @@ function signTexture(): THREE.CanvasTexture {
   c.height = 256;
   const g = c.getContext('2d')!;
   g.fillStyle = '#3b2a1b';
-  g.font = 'bold 150px Georgia, serif';
   g.textBaseline = 'middle';
-  // Letters pressed into the snow by hand: each a little crooked.
+  // Letters pressed into the snow by hand: each a little crooked. Shrink the font until the whole
+  // word (with letter gaps) fits the canvas, then centre it, so no letter gets clipped.
   const text = 'ICE HOSTEL';
-  let x = 40;
+  const GAP = 6;
+  const widthAt = (px: number) => {
+    g.font = `bold ${px}px Georgia, serif`;
+    return [...text].reduce((sum, ch) => sum + (ch === ' ' ? px / 3 : g.measureText(ch).width) + GAP, -GAP);
+  };
+  let px = 150;
+  while (px > 40 && widthAt(px) > c.width - 80) px -= 4;
+  let x = (c.width - widthAt(px)) / 2;
   let seed = 9;
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   for (const ch of text) {
-    const w = ch === ' ' ? 50 : g.measureText(ch).width;
+    const w = ch === ' ' ? px / 3 : g.measureText(ch).width;
     g.save();
     g.translate(x + w / 2, 128 + (rand() - 0.5) * 16);
     g.rotate((rand() - 0.5) * 0.16);
     g.fillText(ch, -w / 2, 0);
     g.restore();
-    x += w + 6;
+    x += w + GAP;
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
