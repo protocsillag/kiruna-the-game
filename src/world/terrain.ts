@@ -36,6 +36,12 @@ export function groundHeight(x: number, z: number): number {
   return Math.max(heightAt(x, z), ICE_Y);
 }
 
+/** Z of the shoreline at a given x, searching from camp toward the lake. */
+export function shoreZ(x: number): number {
+  for (let z = 60; z > -200; z -= 0.5) if (shoreDistance(x, z) <= 0) return z;
+  return LAKE.z;
+}
+
 export const isOnIce = (x: number, z: number) => heightAt(x, z) < ICE_Y;
 
 /** 0 = packed snow / ice, 1 = deep powder. */

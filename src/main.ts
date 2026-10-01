@@ -1,8 +1,15 @@
 import './style.css';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { createTerrain, CAMP } from './world/terrain';
+import { createTerrain } from './world/terrain';
 import { createLake } from './world/lake';
+import { createCamp } from './world/camp';
+import { createTrees } from './world/trees';
+import { createTrail } from './world/trail';
+import { createSauna } from './activities/sauna';
+import { createIceHole } from './activities/icehole';
+import { Prompt } from './ui/prompt';
+import { ScreenFX } from './ui/screenfx';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -32,6 +39,9 @@ async function start(): Promise<void> {
 
   createTerrain(scene, world);
   createLake(scene, world);
+  const camp = createCamp(scene, world);
+  createTrees(scene, world, camp.clearings, [{ x: 72, z: -96 }]); // + the lone spruce on the ice
+  createTrail(scene, world);
   const sky = createSky(scene, renderer);
   const post = createPostFX(renderer, scene, camera);
   const wind = new Wind();
@@ -40,7 +50,12 @@ async function start(): Promise<void> {
 
   const input = new Input(renderer.domElement);
   const orbit = new OrbitCamera(camera);
-  const player = new Player(world, scene, CAMP.x, CAMP.z - 8);
+  const player = new Player(world, scene, camp.spawn.x, camp.spawn.z);
+  const fx = new ScreenFX();
+  const prompt = new Prompt();
+  const sauna = createSauna(scene, world, player);
+  const hole = createIceHole(scene, sauna.holeSpot, player, () => fx.triggerShiver());
+  sky.hideSnowIn(sauna.interior);
   const footprints = new Footprints(scene);
   const breath = new Breath(scene);
 
@@ -71,14 +86,30 @@ async function start(): Promise<void> {
     world.step();
     player.sync(dt);
 
-    footprints.update(player.position, player.heading, player.jogging, player.onIce);
-    breath.update(dt, player.character.head, player.heading, player.jogging);
-    orbit.update(dt, player.position);
+    const indoors = sauna.isInside(player.position);
+    if (!player.locked && !indoors) {
+      footprints.update(player.position, player.heading, player.jogging, player.onIce);
+    }
+    const cold = sauna.warmth(player.position) < 0.2;
+    breath.update(dt, player.character.head, player.heading, player.jogging || fx.shivering, cold);
+
+    const action = sauna.interaction(player.position) ?? hole.interaction(player.position);
+    prompt.show(action?.label ?? null);
+    if (action && input.pressed('KeyE')) action.run();
+    prompt.status(sauna.status(player.position));
+    fx.update(dt, sauna.warmth(player.position));
+    orbit.shake = fx.shake;
+    orbit.update(dt, player.position, world, player.collider);
     wind.update(dt);
     const palette = sky.update(dt, camera.position, player.position, wind.gust);
     post.bloom.strength = palette.bloom;
+    const tint = palette.hemiSky.clone().multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
+    camp.update(dt, palette, wind.gust);
+    sauna.update(dt, tint);
+    hole.update(dt);
     hud.update(sky.clock);
     post.render();
+    input.endFrame();
   });
 }
 

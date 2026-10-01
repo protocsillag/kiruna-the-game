@@ -39,9 +39,9 @@ export class Breath {
     }
   }
 
-  update(dt: number, head: THREE.Object3D, heading: number, jogging: boolean): void {
+  update(dt: number, head: THREE.Object3D, heading: number, jogging: boolean, cold = true): void {
     this.timer -= dt;
-    if (this.timer <= 0) {
+    if (this.timer <= 0 && cold) {
       this.timer = (jogging ? 1.2 : 2.8) + Math.random() * 0.6;
       head.getWorldPosition(this.head);
       const fx = Math.sin(heading);

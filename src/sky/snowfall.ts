@@ -10,6 +10,8 @@ uniform float uPixelRatio;
 uniform vec3 uCam;
 uniform vec3 uBox;
 uniform vec2 uDrift;
+uniform vec3 uHideMin;
+uniform vec3 uHideMax;
 varying float vAlpha;
 void main() {
   vec3 p = position;
@@ -20,6 +22,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float dist = -mv.z;
   vAlpha = (1.0 - smoothstep(uBox.x * 0.25, uBox.x * 0.5, dist)) * smoothstep(0.3, 1.5, dist);
+  if (all(greaterThan(p, uHideMin)) && all(lessThan(p, uHideMax))) vAlpha = 0.0; // indoors
   gl_PointSize = 26.0 * (0.6 + aSeed * 0.8) / max(dist, 0.5) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
 }`;
@@ -35,6 +38,7 @@ void main() {
 export interface Snowfall {
   points: THREE.Points;
   update(dt: number, camera: THREE.Vector3, gust: number, color: THREE.Color, time: number): void;
+  hideIn(box: THREE.Box3): void;
 }
 
 /** Light snowfall drawn entirely on the GPU; flakes drift with the wind gusts. */
@@ -56,6 +60,8 @@ export function createSnowfall(pixelRatio: number): Snowfall {
     uBox: { value: BOX },
     uDrift: { value: new THREE.Vector2() },
     uColor: { value: new THREE.Color() },
+    uHideMin: { value: new THREE.Vector3(1e9, 1e9, 1e9) },
+    uHideMax: { value: new THREE.Vector3(1e9, 1e9, 1e9) },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms,
@@ -70,6 +76,10 @@ export function createSnowfall(pixelRatio: number): Snowfall {
 
   return {
     points,
+    hideIn(box) {
+      uniforms.uHideMin.value.copy(box.min);
+      uniforms.uHideMax.value.copy(box.max).setY(box.max.y + 3); // include the roof space
+    },
     update(dt, camera, gust, color, time) {
       // Prevailing wind from the west-north-west, stronger in gusts.
       uniforms.uDrift.value.x += (0.4 + gust * 2.2) * dt;

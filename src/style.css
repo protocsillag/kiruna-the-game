@@ -91,3 +91,57 @@ canvas {
   pointer-events: none;
   white-space: pre;
 }
+
+#prompt,
+#status-line {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #f2f4f9;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  letter-spacing: 0.04em;
+}
+
+#prompt {
+  bottom: 56px;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#prompt b {
+  padding: 3px 10px;
+  border: 1px solid rgba(242, 244, 249, 0.6);
+  border-radius: 6px;
+  background: rgba(14, 20, 38, 0.45);
+}
+
+#status-line {
+  bottom: 100px;
+  font-size: 15px;
+  color: #ffd59a;
+}
+
+#prompt.visible,
+#status-line.visible {
+  opacity: 1;
+}
+
+.fx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.fx-warm {
+  background: radial-gradient(ellipse at center, rgba(255, 140, 60, 0) 40%, rgba(255, 110, 40, 0.38) 100%);
+}
+
+.fx-cold {
+  background: radial-gradient(ellipse at center, rgba(200, 230, 255, 0) 30%, rgba(200, 230, 255, 0.7) 100%);
+}

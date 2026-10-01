@@ -3,10 +3,12 @@ import { damp } from '../world/noise';
 
 const mat = (color: number, roughness = 0.85) => new THREE.MeshStandardMaterial({ color, roughness });
 
+export type Pose = 'stand' | 'sit';
+
 export interface Character {
   root: THREE.Group;
   head: THREE.Object3D;
-  animate(dt: number, speed: number): void;
+  animate(dt: number, speed: number, pose: Pose): void;
 }
 
 /** Low-poly placeholder in a winter jacket and beanie; faces +Z, origin at the feet. */
@@ -99,8 +101,18 @@ export function createCharacter(): Character {
   return {
     root,
     head,
-    animate(dt, speed) {
+    animate(dt, speed, pose) {
       time += dt;
+      if (pose === 'sit') {
+        // Thighs forward and slightly down, hands resting on the knees.
+        for (const leg of legs) leg.rotation.x = -1.15;
+        for (const arm of arms) arm.rotation.x = -0.6;
+        hips.position.y = 0.9;
+        hips.rotation.x = -0.05;
+        torso.scale.y = 1 + Math.sin(time * 1.2) * 0.015;
+        amp = 0;
+        return;
+      }
       amp += (Math.min(speed / 4.5, 1) * 0.75 - amp) * damp(8, dt);
       phase += dt * (4 + speed * 1.2);
       const s = Math.sin(phase) * amp;

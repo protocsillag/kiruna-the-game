@@ -7,7 +7,7 @@ import RAPIER, {
 } from '@dimforge/rapier3d-compat';
 import { damp } from '../world/noise';
 import { groundHeight, isOnIce, snowDepth, WORLD_SIZE } from '../world/terrain';
-import { createCharacter, type Character } from './character';
+import { createCharacter, type Character, type Pose } from './character';
 import type { Input } from './input';
 
 const HALF_HEIGHT = 0.55;
@@ -24,12 +24,14 @@ export class Player {
   /** Feet position, updated after each physics step. */
   readonly position = new THREE.Vector3();
   heading = Math.PI;
+  /** Set while an activity controls the player (sitting, cold dip). */
+  locked: { root: THREE.Vector3; pose: Pose } | null = null;
   speed = 0;
   jogging = false;
   onIce = false;
 
   private body: RigidBody;
-  private collider: Collider;
+  readonly collider: Collider;
   private controller: KinematicCharacterController;
   private velocity = new THREE.Vector3();
   private velY = 0;
@@ -53,8 +55,30 @@ export class Player {
     this.sync(0);
   }
 
+  /** Hands control to an activity: holds the character at `root` (feet) facing `heading`. */
+  lock(root: THREE.Vector3, heading: number, pose: Pose): void {
+    this.locked = { root: root.clone(), pose };
+    this.heading = heading;
+    this.velocity.set(0, 0, 0);
+    this.speed = 0;
+  }
+
+  /** Returns control, standing the player at `feet`. */
+  unlock(feet: THREE.Vector3): void {
+    this.locked = null;
+    const t = { x: feet.x, y: feet.y + FEET + 0.05, z: feet.z };
+    this.body.setTranslation(t, true);
+    this.body.setNextKinematicTranslation(t);
+    this.velY = 0;
+  }
+
   /** Computes this frame's movement; call before world.step(). */
   update(dt: number, input: Input, cameraYaw: number): void {
+    if (this.locked) {
+      const r = this.locked.root;
+      this.body.setNextKinematicTranslation({ x: r.x, y: r.y + FEET, z: r.z });
+      return;
+    }
     const fwd = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const side = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
     this.jogging = input.down('ShiftLeft') || input.down('ShiftRight');
@@ -108,7 +132,7 @@ export class Player {
     const root = this.character.root;
     root.position.copy(this.position);
     root.rotation.y = this.heading;
-    this.character.animate(dt, this.speed);
+    this.character.animate(dt, this.speed, this.locked?.pose ?? 'stand');
     root.updateMatrixWorld(true);
   }
 }

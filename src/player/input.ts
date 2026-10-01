@@ -35,6 +35,11 @@ export class Input {
     return this.presses.delete(code);
   }
 
+  /** Forget presses nothing asked about this frame (so a stray E can't fire later). */
+  endFrame(): void {
+    this.presses.clear();
+  }
+
   requestLock(): void {
     const p = this.canvas.requestPointerLock() as unknown as Promise<void> | undefined;
     p?.catch(() => {});
