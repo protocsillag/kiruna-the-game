@@ -8,6 +8,7 @@ import { createTrees } from './world/trees';
 import { createTrail } from './world/trail';
 import { createSauna } from './activities/sauna';
 import { createYurt } from './activities/yurt';
+import { createIgloo } from './activities/igloo';
 import { Prompt } from './ui/prompt';
 import { ScreenFX } from './ui/screenfx';
 import { Quality } from './ui/quality';
@@ -57,12 +58,13 @@ async function start(): Promise<void> {
   const prompt = new Prompt();
   const sauna = createSauna(scene, world, player, () => fx.triggerShiver());
   const yurt = createYurt(scene, world, player, camp.yurt.x, camp.yurt.z, camp.yurt.rot);
+  const igloo = createIgloo(scene, world, camp.igloo.x, camp.igloo.z, camp.igloo.rot);
   sky.hideSnowIn(sauna.interior, 0);
   sky.hideSnowIn(yurt.interior, 1);
 
   // Parked at camp, between the spawn point and the shore, nose to the lake.
   const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
-  const providers = [sled, sauna, yurt];
+  const providers = [sled, sauna, yurt, igloo];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
@@ -89,8 +91,12 @@ async function start(): Promise<void> {
     () => {
       input.requestLock();
       wind.start();
+      igloo.resume();
     },
-    () => wind.suspend(),
+    () => {
+      wind.suspend();
+      igloo.pause();
+    },
   );
 
   const clock = new THREE.Clock();
@@ -128,7 +134,10 @@ async function start(): Promise<void> {
     for (const p of providers) if ((action = p.interaction(player.position))) break;
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
-    prompt.status(sled.status() ?? sauna.status(player.position) ?? yurt.status(player.position));
+    prompt.status(
+      sled.status() ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
+    );
+    igloo.update(player.position);
     fx.update(dt, heat);
     orbit.shake = fx.shake;
     orbit.follow(dt, sled.heading, sled.riding && Math.abs(sled.speed) > 3);

@@ -17,6 +17,8 @@ export interface Camp {
   spawn: THREE.Vector3;
   /** Where the yurt stands (built by activities/yurt.ts). */
   yurt: { x: number; z: number; rot: number };
+  /** The "Ice Hostel" snow igloo beside the lodge (built by activities/igloo.ts). */
+  igloo: { x: number; z: number; rot: number };
   /** Areas kept free of trees. */
   clearings: Circle[];
   update(dt: number, p: Palette, gust: number): void;
@@ -113,6 +115,14 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
 
   const spawnX = 2;
   const spawn = new THREE.Vector3(spawnX, 0, shoreZ(spawnX) + 14);
+  // Ice Hostel: on the lodge's left side (lodge-local x = −13, slightly back), facing the lake.
+  const igloo = {
+    x: lodgeX - 13 * Math.cos(lodgeRot) + 1 * Math.sin(lodgeRot),
+    z: lodgeZ + 13 * Math.sin(lodgeRot) + 1 * Math.cos(lodgeRot),
+    rot: lodgeRot,
+  };
+  clearings.push({ x: igloo.x, z: igloo.z, r: 8 });
+
   const yurtX = -18;
   const yurtZ = shoreZ(yurtX) + 22;
   const yurt = { x: yurtX, z: yurtZ, rot: faceLake(yurtX, yurtZ) };
@@ -121,6 +131,7 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
   return {
     spawn,
     yurt,
+    igloo,
     clearings,
     update(dt, p, gust) {
       MATS.window.emissiveIntensity = 1.6 + p.stars * 1.8;
