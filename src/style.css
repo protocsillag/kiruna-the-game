@@ -145,3 +145,20 @@ canvas {
 .fx-cold {
   background: radial-gradient(ellipse at center, rgba(200, 230, 255, 0) 30%, rgba(200, 230, 255, 0.7) 100%);
 }
+
+#quality {
+  margin-top: 26px;
+  padding: 7px 16px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: #e8edf7;
+  background: rgba(232, 237, 247, 0.08);
+  border: 1px solid rgba(232, 237, 247, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#quality:hover {
+  background: rgba(232, 237, 247, 0.18);
+}

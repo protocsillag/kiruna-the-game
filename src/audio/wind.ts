@@ -1,4 +1,5 @@
 import { damp } from '../world/noise';
+import { audio } from './context';
 
 /**
  * Ambient wind synthesised with Web Audio (no sound files): a low rumble plus a faint
@@ -19,7 +20,8 @@ export class Wind {
       void this.ctx.resume();
       return;
     }
-    const ctx = new AudioContext();
+    const ctx = audio();
+    void ctx.resume();
     this.ctx = ctx;
 
     const buffer = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);

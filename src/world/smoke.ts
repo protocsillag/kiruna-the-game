@@ -35,6 +35,8 @@ export class Smoke {
   /** Puffs per second. */
   rate = 0;
   readonly tint = new THREE.Color(0xffffff);
+  /** Extra launch velocity added to each new puff. */
+  readonly push = new THREE.Vector3();
   private puffs: Puff[] = [];
   private cursor = 0;
   private acc = 0;
@@ -80,6 +82,6 @@ export class Smoke {
     const s = this.o.spread;
     p.age = 0;
     p.sprite.position.copy(this.origin).add(new THREE.Vector3((Math.random() - 0.5) * s, 0, (Math.random() - 0.5) * s));
-    p.vel.set((Math.random() - 0.5) * 0.2, this.o.rise * (0.7 + Math.random() * 0.6), (Math.random() - 0.5) * 0.2);
+    p.vel.set((Math.random() - 0.5) * 0.2, this.o.rise * (0.7 + Math.random() * 0.6), (Math.random() - 0.5) * 0.2).add(this.push);
   }
 }

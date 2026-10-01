@@ -127,8 +127,11 @@ export class Player {
 
   /** Copies the physics result to the visible character; call after world.step(). */
   sync(dt: number): void {
-    const t = this.body.translation();
-    this.position.set(t.x, t.y - FEET, t.z);
+    if (this.locked) this.position.copy(this.locked.root);
+    else {
+      const t = this.body.translation();
+      this.position.set(t.x, t.y - FEET, t.z);
+    }
     const root = this.character.root;
     root.position.copy(this.position);
     root.rotation.y = this.heading;

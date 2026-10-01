@@ -45,7 +45,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 - [x] **M1 Foundation**: project setup, Pages deploy, snowy terrain, frozen lake, player + camera.
 - [x] **M2 Sky**: day/night curve, stars, aurora shader, snowfall, fog, bloom, ambient wind audio.
 - [x] **M3 Camp & sauna**: cabins, lodge, trees, trail poles, sauna interior + stove interaction, ice hole.
-- [ ] **M4 Snowmobile & polish**: snowmobile enter/exit, handling, tracks, sound, headlight; interaction prompts, quality toggle, README.
+- [x] **M4 Snowmobile & polish**: snowmobile enter/exit, handling, tracks, sound, headlight; interaction prompts, quality toggle, README.
 
 ## Progress
 
@@ -54,5 +54,6 @@ _(Update at the end of each session: what was done, what's next, known issues.)_
 - **M1+M2 (2026-10-01):** Vite 8/TS 7/three 0.186/Rapier 0.21. Noise terrain + frozen lake, orbit cam, code-built player (footprints, breath). `src/sky/`: 24-min Kiruna-January day clock (P pause, F +1 h), palette, dome, stars, aurora, snowfall, fog, bloom; synthesised wind in `src/audio/`.
 - **M3 done (2026-10-01):** `world/buildings.ts` timber builder → lodge (smoke, porch light), 5 cabins, glass-roof cabin, woodpile (`camp.ts`); instanced spruce + frosted birch, lone spruce on ice (`trees.ts`); red-cross trail poles (`trail.ts`). `activities/`: walk-in sauna (E add wood → temp, steam, fire light; E sit), ice hole cold dip with shiver. Camera raycasts against walls. Placement follows `shoreZ()`.
 - **Deploy:** public repo, Pages via Actions → https://protocsillag.github.io/kiruna-the-game/
-- **Next: M4** snowmobile + polish. `ui/prompt.ts` already does basic E prompts; generalise it. Quality toggle should cover shadows, snow count, bloom, tree shadows.
+- **M4 done (2026-10-01):** `vehicles/`: code-built sled, arcade handling (ice grip 1.6 vs snow 7), capsule collider + character controller, tracks, spray, headlight by darkness; `audio/engine.ts` synth (shared ctx in `audio/context.ts`). Camera auto-follows behind the sled. Interaction providers list in `main.ts`. Q / title button: quality (shadows, bloom, 1× DPR, 35% snow). README.
+- **v1 complete. Next (later list):** dog sledding, ice fishing, Ice Hotel, map, photo mode, save; swap code-built models for CC0.
 - **Known:** Node at `~/.local/node/bin`, gh at `~/.local/bin` (not on PATH). All models are code-built placeholders (no CC0 assets yet). Shader NaNs → bloom black boxes: keep pow() bases ≥ 0. LKAB mine silhouette not in any milestone.

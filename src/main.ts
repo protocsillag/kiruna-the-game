@@ -10,6 +10,8 @@ import { createSauna } from './activities/sauna';
 import { createIceHole } from './activities/icehole';
 import { Prompt } from './ui/prompt';
 import { ScreenFX } from './ui/screenfx';
+import { Quality } from './ui/quality';
+import { Snowmobile } from './vehicles/snowmobile';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -56,6 +58,23 @@ async function start(): Promise<void> {
   const sauna = createSauna(scene, world, player);
   const hole = createIceHole(scene, sauna.holeSpot, player, () => fx.triggerShiver());
   sky.hideSnowIn(sauna.interior);
+
+  // Parked at camp, between the spawn point and the shore, nose to the lake.
+  const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
+  const providers = [sled, sauna, hole];
+  const ignored = new Set([player.collider.handle, sled.collider.handle]);
+  const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
+
+  const quality = new Quality((high) => {
+    renderer.setPixelRatio(high ? Math.min(devicePixelRatio, 2) : 1);
+    renderer.setSize(innerWidth, innerHeight);
+    post.setSize(innerWidth, innerHeight);
+    post.bloom.enabled = high;
+    sky.setQuality(high, renderer.getPixelRatio());
+  });
+  const tint = new THREE.Color(0xffffff);
+  let darkness = 0;
+  let wasRiding = false;
   const footprints = new Footprints(scene);
   const breath = new Breath(scene);
 
@@ -80,11 +99,21 @@ async function start(): Promise<void> {
     orbit.look(mouse.dx, mouse.dy, mouse.wheel);
     if (input.pressed('KeyP')) sky.clock.togglePause();
     if (input.pressed('KeyF')) sky.clock.advance(1); // cheat: skip ahead an hour
+    if (input.pressed('KeyQ')) {
+      quality.toggle();
+      hud.flash(quality.label);
+    }
 
+    sled.drive(dt, input);
     player.update(dt, input, orbit.yaw);
     world.timestep = dt;
     world.step();
+    sled.sync(dt, darkness, tint, wind.gust);
     player.sync(dt);
+    if (sled.riding !== wasRiding) {
+      wasRiding = sled.riding;
+      orbit.setZoom(sled.riding ? 8.5 : 6);
+    }
 
     const indoors = sauna.isInside(player.position);
     if (!player.locked && !indoors) {
@@ -93,17 +122,20 @@ async function start(): Promise<void> {
     const cold = sauna.warmth(player.position) < 0.2;
     breath.update(dt, player.character.head, player.heading, player.jogging || fx.shivering, cold);
 
-    const action = sauna.interaction(player.position) ?? hole.interaction(player.position);
+    let action = null;
+    for (const p of providers) if ((action = p.interaction(player.position))) break;
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
-    prompt.status(sauna.status(player.position));
+    prompt.status(sled.status() ?? sauna.status(player.position));
     fx.update(dt, sauna.warmth(player.position));
     orbit.shake = fx.shake;
-    orbit.update(dt, player.position, world, player.collider);
+    orbit.follow(dt, sled.heading, sled.riding && Math.abs(sled.speed) > 3);
+    orbit.update(dt, player.position, world, cameraSees);
     wind.update(dt);
     const palette = sky.update(dt, camera.position, player.position, wind.gust);
     post.bloom.strength = palette.bloom;
-    const tint = palette.hemiSky.clone().multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
+    darkness = palette.stars;
+    tint.copy(palette.hemiSky).multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
     camp.update(dt, palette, wind.gust);
     sauna.update(dt, tint);
     hole.update(dt);

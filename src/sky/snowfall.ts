@@ -39,6 +39,8 @@ export interface Snowfall {
   points: THREE.Points;
   update(dt: number, camera: THREE.Vector3, gust: number, color: THREE.Color, time: number): void;
   hideIn(box: THREE.Box3): void;
+  /** Pixel ratio for flake size, and the fraction of flakes drawn (Low quality draws fewer). */
+  setQuality(pixelRatio: number, fraction: number): void;
 }
 
 /** Light snowfall drawn entirely on the GPU; flakes drift with the wind gusts. */
@@ -76,6 +78,10 @@ export function createSnowfall(pixelRatio: number): Snowfall {
 
   return {
     points,
+    setQuality(pixelRatio, fraction) {
+      uniforms.uPixelRatio.value = pixelRatio;
+      geo.setDrawRange(0, Math.floor(COUNT * fraction));
+    },
     hideIn(box) {
       uniforms.uHideMin.value.copy(box.min);
       uniforms.uHideMax.value.copy(box.max).setY(box.max.y + 3); // include the roof space

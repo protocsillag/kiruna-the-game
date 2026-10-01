@@ -31,6 +31,7 @@ void main() {
 export interface Stars {
   points: THREE.Points;
   update(camera: THREE.Vector3, alpha: number, time: number): void;
+  setPixelRatio(r: number): void;
 }
 
 export function createStars(pixelRatio: number): Stars {
@@ -71,6 +72,7 @@ export function createStars(pixelRatio: number): Stars {
 
   return {
     points,
+    setPixelRatio: (r) => (uniforms.uPixelRatio.value = r),
     update(camera, alpha, time) {
       points.position.copy(camera);
       points.visible = alpha > 0.01;
