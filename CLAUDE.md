@@ -43,7 +43,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 ## Milestones
 
 - [x] **M1 Foundation**: project setup, Pages deploy, snowy terrain, frozen lake, player + camera.
-- [ ] **M2 Sky**: day/night curve, stars, aurora shader, snowfall, fog, bloom, ambient wind audio.
+- [x] **M2 Sky**: day/night curve, stars, aurora shader, snowfall, fog, bloom, ambient wind audio.
 - [ ] **M3 Camp & sauna**: cabins, lodge, trees, trail poles, sauna interior + stove interaction, ice hole.
 - [ ] **M4 Snowmobile & polish**: snowmobile enter/exit, handling, tracks, sound, headlight; interaction prompts, quality toggle, README.
 
@@ -52,6 +52,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 _(Update at the end of each session: what was done, what's next, known issues.)_
 
 - **M1 done (2026-10-01):** Vite 8 + TS 7 + three 0.186 + Rapier 0.21. 800 m noise terrain (trimesh collider), frozen lake (ice slab collider, drift texture), fixed blue-hour light in `src/world/lighting.ts`. Orbit cam; code-built placeholder player: walk/jog, deep-snow slowdown, slippery ice, footprints, breath.
+- **M2 done (2026-10-01):** `src/sky/`: 24-min clock on the real Kiruna January sun curve (P pauses), elevation-keyed palette, dome with glow + clouds, stars, 3 shader aurora curtains, GPU snowfall, fog, HDR bloom. `src/audio/wind.ts`: synthesised wind, gusts drive snow drift. HUD clock. `world/lighting.ts` removed.
 - **Deploy:** repo made public 2026-10-01; Pages (GitHub Actions) live at https://protocsillag.github.io/kiruna-the-game/
-- **Next: M2 Sky** — replace `lighting.ts` with day cycle (add P = pause there).
-- **Known:** Node lives at `~/.local/node/bin`, gh at `~/.local/bin` (not on PATH). Player is a placeholder; swap for CC0 model later. Bundle ~1.8 MB gz (Rapier WASM).
+- **Next: M3 Camp & sauna.** Warm windows/stove need emissive > 1.0 to bloom (threshold is 1.0).
+- **Known:** Node lives at `~/.local/node/bin`, gh at `~/.local/bin` (not on PATH). Player is a placeholder; swap for CC0 model later. Bundle ~1.8 MB gz (Rapier WASM). LKAB mine silhouette/town glow (mood refs) not in any milestone yet.

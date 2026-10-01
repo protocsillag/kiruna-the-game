@@ -1,13 +1,17 @@
 /** Keyboard + mouse state. Mouse look uses pointer lock, with click-drag as a fallback. */
 export class Input {
   private keys = new Set<string>();
+  private presses = new Set<string>();
   private dx = 0;
   private dy = 0;
   private wheel = 0;
   locked = false;
 
   constructor(private canvas: HTMLCanvasElement) {
-    addEventListener('keydown', (e) => this.keys.add(e.code));
+    addEventListener('keydown', (e) => {
+      this.keys.add(e.code);
+      if (!e.repeat) this.presses.add(e.code);
+    });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     document.addEventListener('pointerlockchange', () => {
@@ -24,6 +28,11 @@ export class Input {
 
   down(code: string): boolean {
     return this.keys.has(code);
+  }
+
+  /** True once per physical key press. */
+  pressed(code: string): boolean {
+    return this.presses.delete(code);
   }
 
   requestLock(): void {

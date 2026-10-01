@@ -3,7 +3,10 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { createTerrain, CAMP } from './world/terrain';
 import { createLake } from './world/lake';
-import { createLighting } from './world/lighting';
+import { createSky } from './sky/sky';
+import { createPostFX } from './sky/postfx';
+import { Wind } from './audio/wind';
+import { Hud } from './ui/hud';
 import { Input } from './player/input';
 import { OrbitCamera } from './player/camera';
 import { Player } from './player/player';
@@ -29,7 +32,10 @@ async function start(): Promise<void> {
 
   createTerrain(scene, world);
   createLake(scene, world);
-  const lighting = createLighting(scene);
+  const sky = createSky(scene, renderer);
+  const post = createPostFX(renderer, scene, camera);
+  const wind = new Wind();
+  const hud = new Hud();
   world.step(); // build broad-phase so the first character query sees the ground
 
   const input = new Input(renderer.domElement);
@@ -42,14 +48,22 @@ async function start(): Promise<void> {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    post.setSize(innerWidth, innerHeight);
   });
-  setupOverlay(() => input.requestLock());
+  setupOverlay(
+    () => {
+      input.requestLock();
+      wind.start();
+    },
+    () => wind.suspend(),
+  );
 
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 1 / 30);
     const mouse = input.consumeMouse();
     orbit.look(mouse.dx, mouse.dy, mouse.wheel);
+    if (input.pressed('KeyP')) sky.clock.togglePause();
 
     player.update(dt, input, orbit.yaw);
     world.timestep = dt;
@@ -59,8 +73,11 @@ async function start(): Promise<void> {
     footprints.update(player.position, player.heading, player.jogging, player.onIce);
     breath.update(dt, player.character.head, player.heading, player.jogging);
     orbit.update(dt, player.position);
-    lighting.follow(player.position);
-    renderer.render(scene, camera);
+    wind.update(dt);
+    const palette = sky.update(dt, camera.position, player.position, wind.gust);
+    post.bloom.strength = palette.bloom;
+    hud.update(sky.clock);
+    post.render();
   });
 }
 
