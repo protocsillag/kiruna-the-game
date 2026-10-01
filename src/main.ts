@@ -64,6 +64,7 @@ async function start(): Promise<void> {
     const mouse = input.consumeMouse();
     orbit.look(mouse.dx, mouse.dy, mouse.wheel);
     if (input.pressed('KeyP')) sky.clock.togglePause();
+    if (input.pressed('KeyF')) sky.clock.advance(1); // cheat: skip ahead an hour
 
     player.update(dt, input, orbit.yaw);
     world.timestep = dt;

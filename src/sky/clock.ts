@@ -18,6 +18,11 @@ export class DayClock {
     this.hours = (this.hours + (dt / 60) * (24 / DAY_MINUTES)) % 24;
   }
 
+  /** Jumps the clock forward (works while paused too). */
+  advance(hours: number): void {
+    this.hours = (this.hours + hours) % 24;
+  }
+
   togglePause(): void {
     this.paused = !this.paused;
   }
