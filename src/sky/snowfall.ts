@@ -19,7 +19,7 @@ void main() {
   p = mod(p - origin, uBox) + origin; // wrap the flakes around the camera
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float dist = -mv.z;
-  vAlpha = smoothstep(uBox.x * 0.5, uBox.x * 0.25, dist) * smoothstep(0.3, 1.5, dist);
+  vAlpha = (1.0 - smoothstep(uBox.x * 0.25, uBox.x * 0.5, dist)) * smoothstep(0.3, 1.5, dist);
   gl_PointSize = 26.0 * (0.6 + aSeed * 0.8) / max(dist, 0.5) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
 }`;
@@ -28,7 +28,7 @@ const fragment = /* glsl */ `
 uniform vec3 uColor;
 varying float vAlpha;
 void main() {
-  float a = smoothstep(0.5, 0.15, length(gl_PointCoord - 0.5)) * vAlpha;
+  float a = (1.0 - smoothstep(0.15, 0.5, length(gl_PointCoord - 0.5))) * vAlpha;
   gl_FragColor = vec4(uColor, a * 0.85);
 }`;
 

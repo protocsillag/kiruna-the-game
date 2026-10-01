@@ -36,7 +36,9 @@ void main() {
   vec3 col = mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.45));
 
   // Low sun: glow hugging the horizon in the sun's direction.
-  float toward = dot(normalize(d.xz + 1e-5), normalize(uSunDir.xz + 1e-5)) * 0.5 + 0.5;
+  // Clamp: rounding can push this a hair below 0 facing away from the sun, and pow() of a
+  // negative base is NaN on Apple GPUs (bloom then smears it into big dark boxes).
+  float toward = clamp(dot(normalize(d.xz + 1e-5), normalize(uSunDir.xz + 1e-5)) * 0.5 + 0.5, 0.0, 1.0);
   float hp = max(h, 0.0);
   float glow = pow(toward, 3.0) * exp(-hp * 9.0) + pow(toward, 1.5) * exp(-hp * 3.0) * 0.35;
   glow += pow(toward, 8.0) * exp(-abs(h) * 40.0) * 0.6;

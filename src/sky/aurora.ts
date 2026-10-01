@@ -43,8 +43,8 @@ void main() {
   float rays = 0.5 + 0.5 * noise(vec2(vUv.x * 60.0 + uTime * 0.05 + uSeed, uTime * 0.03));
   float patches = noise(vec2(vUv.x * 3.5 - uTime * 0.012 + uSeed, uSeed));
   float lower = smoothstep(0.0, 0.05, vUv.y);           // crisp lower edge
-  float upper = pow(1.0 - vUv.y, 1.7);                  // long fade upward
-  float ends = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
+  float upper = pow(max(1.0 - vUv.y, 0.0), 1.7);        // long fade upward
+  float ends = smoothstep(0.0, 0.12, vUv.x) * (1.0 - smoothstep(0.88, 1.0, vUv.x));
   float i = lower * upper * ends * rays * (0.35 + 0.9 * patches) * uAlpha;
   vec3 green = vec3(0.12, 1.0, 0.42);
   vec3 violet = vec3(0.55, 0.22, 0.85);
