@@ -10,8 +10,8 @@ uniform float uPixelRatio;
 uniform vec3 uCam;
 uniform vec3 uBox;
 uniform vec2 uDrift;
-uniform vec3 uHideMin;
-uniform vec3 uHideMax;
+uniform vec3 uHideMin[2];
+uniform vec3 uHideMax[2];
 varying float vAlpha;
 void main() {
   vec3 p = position;
@@ -22,7 +22,9 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float dist = -mv.z;
   vAlpha = (1.0 - smoothstep(uBox.x * 0.25, uBox.x * 0.5, dist)) * smoothstep(0.3, 1.5, dist);
-  if (all(greaterThan(p, uHideMin)) && all(lessThan(p, uHideMax))) vAlpha = 0.0; // indoors
+  for (int i = 0; i < 2; i++) {
+    if (all(greaterThan(p, uHideMin[i])) && all(lessThan(p, uHideMax[i]))) vAlpha = 0.0; // indoors
+  }
   gl_PointSize = 26.0 * (0.6 + aSeed * 0.8) / max(dist, 0.5) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
 }`;
@@ -38,7 +40,8 @@ void main() {
 export interface Snowfall {
   points: THREE.Points;
   update(dt: number, camera: THREE.Vector3, gust: number, color: THREE.Color, time: number): void;
-  hideIn(box: THREE.Box3): void;
+  /** Keep flakes out of up to two indoor boxes (slot 0 or 1). */
+  hideIn(box: THREE.Box3, slot: number): void;
   /** Pixel ratio for flake size, and the fraction of flakes drawn (Low quality draws fewer). */
   setQuality(pixelRatio: number, fraction: number): void;
 }
@@ -62,8 +65,8 @@ export function createSnowfall(pixelRatio: number): Snowfall {
     uBox: { value: BOX },
     uDrift: { value: new THREE.Vector2() },
     uColor: { value: new THREE.Color() },
-    uHideMin: { value: new THREE.Vector3(1e9, 1e9, 1e9) },
-    uHideMax: { value: new THREE.Vector3(1e9, 1e9, 1e9) },
+    uHideMin: { value: [new THREE.Vector3(1e9, 1e9, 1e9), new THREE.Vector3(1e9, 1e9, 1e9)] },
+    uHideMax: { value: [new THREE.Vector3(1e9, 1e9, 1e9), new THREE.Vector3(1e9, 1e9, 1e9)] },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms,
@@ -82,9 +85,9 @@ export function createSnowfall(pixelRatio: number): Snowfall {
       uniforms.uPixelRatio.value = pixelRatio;
       geo.setDrawRange(0, Math.floor(COUNT * fraction));
     },
-    hideIn(box) {
-      uniforms.uHideMin.value.copy(box.min);
-      uniforms.uHideMax.value.copy(box.max).setY(box.max.y + 3); // include the roof space
+    hideIn(box, slot) {
+      uniforms.uHideMin.value[slot].copy(box.min);
+      uniforms.uHideMax.value[slot].copy(box.max).setY(box.max.y + 3); // include the roof space
     },
     update(dt, camera, gust, color, time) {
       // Prevailing wind from the west-north-west, stronger in gusts.

@@ -76,6 +76,7 @@ export function createTerrain(scene: THREE.Scene, world: World): THREE.Mesh {
 
   const vertices = new Float32Array(pos.array as ArrayLike<number>);
   const indices = new Uint32Array(geo.index!.array as ArrayLike<number>);
-  world.createCollider(RAPIER.ColliderDesc.trimesh(vertices, indices));
+  // FIX_INTERNAL_EDGES: stops shapes catching on the seams between triangles.
+  world.createCollider(RAPIER.ColliderDesc.trimesh(vertices, indices, RAPIER.TriMeshFlags.FIX_INTERNAL_EDGES));
   return mesh;
 }

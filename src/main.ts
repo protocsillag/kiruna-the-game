@@ -7,7 +7,7 @@ import { createCamp } from './world/camp';
 import { createTrees } from './world/trees';
 import { createTrail } from './world/trail';
 import { createSauna } from './activities/sauna';
-import { createIceHole } from './activities/icehole';
+import { createYurt } from './activities/yurt';
 import { Prompt } from './ui/prompt';
 import { ScreenFX } from './ui/screenfx';
 import { Quality } from './ui/quality';
@@ -43,7 +43,7 @@ async function start(): Promise<void> {
   createLake(scene, world);
   const camp = createCamp(scene, world);
   createTrees(scene, world, camp.clearings, [{ x: 72, z: -96 }]); // + the lone spruce on the ice
-  createTrail(scene, world);
+  createTrail(scene);
   const sky = createSky(scene, renderer);
   const post = createPostFX(renderer, scene, camera);
   const wind = new Wind();
@@ -55,13 +55,14 @@ async function start(): Promise<void> {
   const player = new Player(world, scene, camp.spawn.x, camp.spawn.z);
   const fx = new ScreenFX();
   const prompt = new Prompt();
-  const sauna = createSauna(scene, world, player);
-  const hole = createIceHole(scene, sauna.holeSpot, player, () => fx.triggerShiver());
-  sky.hideSnowIn(sauna.interior);
+  const sauna = createSauna(scene, world, player, () => fx.triggerShiver());
+  const yurt = createYurt(scene, world, player, camp.yurt.x, camp.yurt.z, camp.yurt.rot);
+  sky.hideSnowIn(sauna.interior, 0);
+  sky.hideSnowIn(yurt.interior, 1);
 
   // Parked at camp, between the spawn point and the shore, nose to the lake.
   const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
-  const providers = [sled, sauna, hole];
+  const providers = [sled, sauna, yurt];
   const ignored = new Set([player.collider.handle, sled.collider.handle]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
@@ -115,19 +116,20 @@ async function start(): Promise<void> {
       orbit.setZoom(sled.riding ? 8.5 : 6);
     }
 
-    const indoors = sauna.isInside(player.position);
+    const indoors = sauna.isInside(player.position) || yurt.isInside(player.position);
     if (!player.locked && !indoors) {
       footprints.update(player.position, player.heading, player.jogging, player.onIce);
     }
-    const cold = sauna.warmth(player.position) < 0.2;
+    const heat = Math.max(sauna.warmth(player.position), yurt.warmth(player.position));
+    const cold = heat < 0.2;
     breath.update(dt, player.character.head, player.heading, player.jogging || fx.shivering, cold);
 
     let action = null;
     for (const p of providers) if ((action = p.interaction(player.position))) break;
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
-    prompt.status(sled.status() ?? sauna.status(player.position));
-    fx.update(dt, sauna.warmth(player.position));
+    prompt.status(sled.status() ?? sauna.status(player.position) ?? yurt.status(player.position));
+    fx.update(dt, heat);
     orbit.shake = fx.shake;
     orbit.follow(dt, sled.heading, sled.riding && Math.abs(sled.speed) > 3);
     orbit.update(dt, player.position, world, cameraSees);
@@ -138,7 +140,7 @@ async function start(): Promise<void> {
     tint.copy(palette.hemiSky).multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
     camp.update(dt, palette, wind.gust);
     sauna.update(dt, tint);
-    hole.update(dt);
+    yurt.update(dt, tint);
     hud.update(sky.clock);
     post.render();
     input.endFrame();

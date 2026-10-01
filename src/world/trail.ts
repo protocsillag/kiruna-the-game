@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import RAPIER, { type World } from '@dimforge/rapier3d-compat';
 import { groundHeight, LAKE, shoreZ } from './terrain';
 import { MATS, mesh } from './materials';
 
@@ -7,7 +6,7 @@ const SPACING = 28;
 const RED = new THREE.MeshStandardMaterial({ color: 0xc4202a, roughness: 0.6 });
 
 /** Winter-trail poles with red crosses, leading from camp across the lake. */
-export function createTrail(scene: THREE.Scene, world: World): void {
+export function createTrail(scene: THREE.Scene): void {
   const startX = 6;
   const start = new THREE.Vector2(startX, shoreZ(startX) - 6);
   const end = new THREE.Vector2(55, LAKE.z - LAKE.rz + 30);
@@ -33,7 +32,6 @@ export function createTrail(scene: THREE.Scene, world: World): void {
       cross.rotation.z = a * Math.PI * 0.25;
       g.add(cross);
     }
-    scene.add(g);
-    world.createCollider(RAPIER.ColliderDesc.cylinder(0.95, 0.06).setTranslation(p.x, y + 0.95, p.y));
+    scene.add(g); // no collider: you ride past the poles, not into them
   }
 }

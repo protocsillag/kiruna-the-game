@@ -108,9 +108,12 @@ export class Snowmobile {
     this.yawRate = turn * Math.sign(this.speed || 1);
     this.heading += this.yawRate * dt;
 
-    // Velocity chases the nose: loose on ice, firm on snow → a slight slide when turning on the lake.
+    // Forward speed is set directly by the throttle (same pace on ice and snow). Sideways slip, left
+    // over from turning, bleeds off slower on ice → a slight slide in turns on the lake.
     const fwd = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
-    this.velocity.lerp(fwd.multiplyScalar(this.speed), damp(onIce ? 1.6 : 7, dt));
+    const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
+    const slip = this.velocity.dot(right) * Math.exp(-(onIce ? 2.2 : 10) * dt);
+    this.velocity.copy(fwd).multiplyScalar(this.speed).addScaledVector(right, slip);
 
     const grounded = this.controller.computedGrounded();
     this.velY = grounded ? -1.5 : this.velY - GRAVITY * dt;
@@ -118,9 +121,10 @@ export class Snowmobile {
     this.controller.computeColliderMovement(this.collider, want, undefined, undefined, this.ignore);
     const m = this.controller.computedMovement();
 
-    // Hit something: lose most of the speed.
-    const wanted = Math.hypot(want.x, want.z);
-    if (wanted > 0.02 && Math.hypot(m.x, m.z) < wanted * 0.4) {
+    // Blocked head-on (not just scraping sideways): lose most of the speed.
+    const wantF = want.x * fwd.x + want.z * fwd.z;
+    const gotF = m.x * fwd.x + m.z * fwd.z;
+    if (Math.abs(wantF) > 0.02 && gotF / wantF < 0.3) {
       this.speed *= 0.5;
       this.velocity.multiplyScalar(0.5);
     }

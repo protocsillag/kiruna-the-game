@@ -15,7 +15,7 @@ const MIN_LIGHT_ELEV = Math.sin((6 * Math.PI) / 180); // keep shadows from going
 
 export interface Sky {
   clock: DayClock;
-  hideSnowIn(box: THREE.Box3): void;
+  hideSnowIn(box: THREE.Box3, slot: number): void;
   setQuality(high: boolean, pixelRatio: number): void;
   update(dt: number, camera: THREE.Vector3, focus: THREE.Vector3, gust: number): Palette;
 }
@@ -53,7 +53,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
 
   return {
     clock,
-    hideSnowIn: (box) => snow.hideIn(box),
+    hideSnowIn: (box, slot) => snow.hideIn(box, slot),
     setQuality(high, pixelRatio) {
       key.castShadow = high;
       stars.setPixelRatio(pixelRatio);

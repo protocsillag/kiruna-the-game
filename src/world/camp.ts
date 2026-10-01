@@ -15,6 +15,8 @@ export interface Circle {
 
 export interface Camp {
   spawn: THREE.Vector3;
+  /** Where the yurt stands (built by activities/yurt.ts). */
+  yurt: { x: number; z: number; rot: number };
   /** Areas kept free of trees. */
   clearings: Circle[];
   update(dt: number, p: Palette, gust: number): void;
@@ -111,10 +113,14 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
 
   const spawnX = 2;
   const spawn = new THREE.Vector3(spawnX, 0, shoreZ(spawnX) + 14);
-  clearings.push({ x: spawn.x, z: spawn.z, r: 10 }, { x: lodgeX, z: lodgeZ - 12, r: 14 });
+  const yurtX = -18;
+  const yurtZ = shoreZ(yurtX) + 22;
+  const yurt = { x: yurtX, z: yurtZ, rot: faceLake(yurtX, yurtZ) };
+  clearings.push({ x: spawn.x, z: spawn.z, r: 10 }, { x: lodgeX, z: lodgeZ - 12, r: 14 }, { x: yurtX, z: yurtZ, r: 9 });
 
   return {
     spawn,
+    yurt,
     clearings,
     update(dt, p, gust) {
       MATS.window.emissiveIntensity = 1.6 + p.stars * 1.8;
