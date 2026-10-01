@@ -1,0 +1,81 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1c2438;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+canvas {
+  display: block;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 20, 38, 0.55);
+  backdrop-filter: blur(3px);
+  color: #e8edf7;
+  user-select: none;
+  transition: opacity 0.4s;
+}
+
+#overlay.ready {
+  cursor: pointer;
+}
+
+#overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card {
+  text-align: center;
+  padding: 32px 40px;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: #ffd59a;
+  text-shadow: 0 0 24px rgba(255, 170, 80, 0.45);
+}
+
+.sub {
+  margin: 6px 0 28px;
+  opacity: 0.75;
+  letter-spacing: 0.06em;
+}
+
+#status {
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+
+.keys {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  justify-content: center;
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.keys b {
+  display: inline-block;
+  min-width: 18px;
+  padding: 2px 7px;
+  margin-right: 6px;
+  border: 1px solid rgba(232, 237, 247, 0.4);
+  border-radius: 5px;
+  font-weight: 600;
+}
