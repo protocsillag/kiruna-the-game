@@ -52,6 +52,6 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 _(Update at the end of each session: what was done, what's next, known issues.)_
 
 - **M1 done (2026-10-01):** Vite 8 + TS 7 + three 0.186 + Rapier 0.21. 800 m noise terrain (trimesh collider), frozen lake (ice slab collider, drift texture), fixed blue-hour light in `src/world/lighting.ts`. Orbit cam; code-built placeholder player: walk/jog, deep-snow slowdown, slippery ice, footprints, breath.
-- **Deploy blocked:** Pages unavailable for private repos on GitHub Free. Make repo public or upgrade, then Settings → Pages → Source: GitHub Actions. Workflow is in place.
+- **Deploy:** repo made public 2026-10-01; Pages (GitHub Actions) live at https://protocsillag.github.io/kiruna-the-game/
 - **Next: M2 Sky** — replace `lighting.ts` with day cycle (add P = pause there).
 - **Known:** Node lives at `~/.local/node/bin`, gh at `~/.local/bin` (not on PATH). Player is a placeholder; swap for CC0 model later. Bundle ~1.8 MB gz (Rapier WASM).
