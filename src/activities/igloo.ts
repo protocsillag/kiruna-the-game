@@ -7,7 +7,6 @@ import type { Interaction } from './interaction';
 
 // Served from public/audio/ (BASE_URL keeps it working under /kiruna-the-game/ on Pages).
 const SONG_URL = `${import.meta.env.BASE_URL}audio/the-king.mp3`;
-const SONG_TITLE = 'Zámbó Jimmy – Egy jó asszony mindent megbocsájt';
 
 const RX = 4.2; // mound radii
 const RY = 3.0;
@@ -176,7 +175,7 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
       const d = Math.hypot(p.x - entrance.x, p.z - entrance.z);
       if (state === 'error' && d < 6) return 'The King is not answering (could not load the song)';
       if (!playing || d > HEARING) return null;
-      return state === 'loading' ? 'Calling the King…' : `♪  ${SONG_TITLE}`;
+      return state === 'loading' ? 'Calling the King…' : null; // no title while it plays
     },
     pause() {
       if (playing) audio.pause();
