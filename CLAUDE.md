@@ -30,7 +30,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 - Deploy to GitHub Pages via GitHub Actions.
 - Target 60 fps on a mid-range laptop. Low/High quality toggle (shadows, snow particles).
 - Folders: `src/world`, `src/player`, `src/vehicles`, `src/sky`, `src/activities`, `src/ui`, `src/audio`. Keep modules small (<300 lines).
-- Controls: WASD + mouse, E = interact, Shift = jog, P = pause time. F = +1 hour (cheat, not shown in the UI).
+- Controls: WASD + mouse, E = interact, Shift = jog, P = pause time. F = +1 hour (listed on the title card).
 
 ## Session rules (to save tokens)
 

@@ -15,6 +15,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 | **Shift** | jog |
 | **E** | interact: ride / get off the snowmobile, add wood, sit, cold dip |
 | **P** | pause the time of day |
+| **F** | forward the clock one hour |
 | **Q** | toggle Low / High quality |
 | **Esc** | pause |
 
