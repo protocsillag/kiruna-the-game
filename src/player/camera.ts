@@ -43,6 +43,11 @@ export class OrbitCamera {
     this.pitch += (0.22 - this.pitch) * damp(1.5, dt);
   }
 
+  /** Ease up to a high angle so the player is seen from above (cold dip). */
+  lookDown(dt: number): void {
+    this.pitch += (Math.max(this.pitch, 0.95) - this.pitch) * damp(3, dt);
+  }
+
   update(dt: number, focus: THREE.Vector3, world: World, include: (c: Collider) => boolean): void {
     const goal = focus.clone().setY(focus.y + LOOK_HEIGHT);
     if (!this.initialised) {

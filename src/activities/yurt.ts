@@ -7,7 +7,7 @@ import type { Player } from '../player/player';
 import type { Interaction } from './interaction';
 
 const R = 3.8; // wall radius
-const WALL_H = 1.95;
+const WALL_H = 2.1;
 const ROOF_H = 2.5;
 const SEGS = 26; // wall segments; segment 0 (facing front, −Z) is left open as the door
 const SEAT_R = 2.3;
@@ -120,7 +120,11 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
   const ring = mesh(new THREE.TorusGeometry(0.52, 0.06, 6, 16), MATS.wood, 0, WALL_H + ROOF_H, 0);
   ring.rotation.x = Math.PI / 2;
   group.add(ring);
-  collide(RAPIER.ColliderDesc.cone(ROOF_H / 2, R + 0.35), 0, WALL_H + ROOF_H / 2, 0); // keeps the camera inside
+  // Camera-only roof collider: narrower and higher than the visible roof so it never overhangs the
+  // doorway. (A wide one blocked the character controller's step-up test at the door.)
+  const coneBase = WALL_H + 0.3;
+  const coneH = WALL_H + ROOF_H - coneBase;
+  collide(RAPIER.ColliderDesc.cone(coneH / 2, R - 0.25), 0, coneBase + coneH / 2, 0);
   const up = new THREE.Vector3(0, 1, 0);
   for (let i = 0; i < 13; i++) {
     const d = dirAt((i / 13) * Math.PI * 2);

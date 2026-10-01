@@ -63,7 +63,7 @@ async function start(): Promise<void> {
   // Parked at camp, between the spawn point and the shore, nose to the lake.
   const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
   const providers = [sled, sauna, yurt];
-  const ignored = new Set([player.collider.handle, sled.collider.handle]);
+  const ignored = new Set([player.collider.handle, sled.collider.handle, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
   const quality = new Quality((high) => {
@@ -132,7 +132,8 @@ async function start(): Promise<void> {
     fx.update(dt, heat);
     orbit.shake = fx.shake;
     orbit.follow(dt, sled.heading, sled.riding && Math.abs(sled.speed) > 3);
-    orbit.update(dt, player.position, world, cameraSees);
+    if (sauna.dipping) orbit.lookDown(dt);
+    orbit.update(dt, player.cameraFocus, world, cameraSees);
     wind.update(dt);
     const palette = sky.update(dt, camera.position, player.position, wind.gust);
     post.bloom.strength = palette.bloom;

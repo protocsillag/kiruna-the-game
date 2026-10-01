@@ -10,9 +10,13 @@ const DOWN = 0.9;
 const HOLD = 1.8;
 const UP = 0.9;
 const DEPTH = 1.25;
+/** Camera aims ~0.5 m above the floor during the dip (focus + 1.5 m look height). */
+const FOCUS_DROP = 1.0;
 
 export interface IceHole {
   dipping: boolean;
+  /** Collider handles the camera ray should ignore (the invisible block over the hole). */
+  cameraIgnore: number[];
   interaction(p: THREE.Vector3): Interaction | null;
   update(dt: number): void;
 }
@@ -59,7 +63,7 @@ export function createIceHole(
   group.add(ladder);
 
   // Invisible block so you don't simply walk into the hole; the dip itself is E.
-  world.createCollider(
+  const blocker = world.createCollider(
     RAPIER.ColliderDesc.cuboid(size / 2, 0.6, size / 2).setTranslation(centre.x, floorY + 0.6, centre.z),
   );
 
@@ -78,12 +82,13 @@ export function createIceHole(
       t = 0;
       plunged = false;
       root.set(centre.x, floorY, centre.z);
-      player.lock(root, Math.PI, 'stand');
+      player.lock(root, Math.PI, 'stand', floorY - FOCUS_DROP);
     },
   };
 
   const hole: IceHole = {
     dipping: false,
+    cameraIgnore: [blocker.handle],
     interaction(p) {
       if (t >= 0) return null;
       const near = Math.max(Math.abs(p.x - centre.x), Math.abs(p.z - centre.z)) < size / 2 + 0.9;
@@ -105,7 +110,7 @@ export function createIceHole(
       }
       // From the floor, down the ladder to shoulder-deep in the lake.
       root.y = THREE.MathUtils.lerp(floorY, ICE_Y - DEPTH, depth);
-      player.lock(root, Math.PI, 'stand');
+      player.lock(root, Math.PI, 'stand', floorY - FOCUS_DROP); // camera stays at floor level, looking down
       if (t >= DOWN + HOLD + UP) {
         t = -1;
         player.unlock(exit);

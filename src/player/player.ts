@@ -25,7 +25,7 @@ export class Player {
   readonly position = new THREE.Vector3();
   heading = Math.PI;
   /** Set while an activity controls the player (sitting, cold dip). */
-  locked: { root: THREE.Vector3; pose: Pose } | null = null;
+  locked: { root: THREE.Vector3; pose: Pose; focusY?: number } | null = null;
   speed = 0;
   jogging = false;
   onIce = false;
@@ -56,11 +56,17 @@ export class Player {
   }
 
   /** Hands control to an activity: holds the character at `root` (feet) facing `heading`. */
-  lock(root: THREE.Vector3, heading: number, pose: Pose): void {
-    this.locked = { root: root.clone(), pose };
+  lock(root: THREE.Vector3, heading: number, pose: Pose, focusY?: number): void {
+    this.locked = { root: root.clone(), pose, focusY };
     this.heading = heading;
     this.velocity.set(0, 0, 0);
     this.speed = 0;
+  }
+
+  /** What the camera should follow: the feet, unless an activity pins the height (cold dip). */
+  get cameraFocus(): THREE.Vector3 {
+    const f = this.locked?.focusY;
+    return f === undefined ? this.position : this.position.clone().setY(f);
   }
 
   /** Returns control, standing the player at `feet`. */

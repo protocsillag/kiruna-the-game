@@ -26,6 +26,8 @@ const targetTemp = (logs: number) => OUTSIDE_TEMP + PEAK * (1 - Math.exp(-0.55 *
 
 export interface Sauna {
   interior: THREE.Box3;
+  readonly dipping: boolean;
+  cameraIgnore: number[];
   isInside(p: THREE.Vector3): boolean;
   /** 0..1 how hot it feels to the player (for the warm screen tint). */
   warmth(p: THREE.Vector3): number;
@@ -168,6 +170,10 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
 
   return {
     interior,
+    get dipping() {
+      return hole.dipping;
+    },
+    cameraIgnore: hole.cameraIgnore,
     isInside,
     warmth: (p) => (isInside(p) ? THREE.MathUtils.clamp((temp - 35) / 55, 0, 1) : 0),
     status(p) {
