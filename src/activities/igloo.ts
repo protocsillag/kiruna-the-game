@@ -5,8 +5,8 @@ import { groundHeight } from '../world/terrain';
 import { MATS, mesh } from '../world/materials';
 import type { Interaction } from './interaction';
 
-// Streamed from the owner's Google Drive (shared "anyone with the link"), not bundled in the repo.
-const SONG_URL = 'https://drive.usercontent.google.com/download?id=1tzNLi5JsyPz7MJzQ0mINJNG99o_x2357&export=download';
+// Served from public/audio/ (BASE_URL keeps it working under /kiruna-the-game/ on Pages).
+const SONG_URL = `${import.meta.env.BASE_URL}audio/the-king.mp3`;
 const SONG_TITLE = 'Zámbó Jimmy – Egy jó asszony mindent megbocsájt';
 
 const RX = 4.2; // mound radii

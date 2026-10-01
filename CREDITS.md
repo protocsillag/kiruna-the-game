@@ -12,4 +12,4 @@ No third-party models, textures or sounds yet. Terrain, ice and the player chara
 
 ## Music
 
-- "Egy jó asszony mindent megbocsájt" by Zámbó Jimmy — not included in this repository. The Ice Hostel streams it from the project owner's Google Drive for personal use; all rights belong to the rights holders.
+- "Egy jó asszony mindent megbocsájt" by Zámbó Jimmy (`public/audio/the-king.mp3`) — added by the project owner for a private group of friends; all rights belong to the rights holders. Remove on request.
