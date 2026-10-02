@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER, { type World } from '@dimforge/rapier3d-compat';
-import { SNICE, SNICE_SOLID } from './ice';
+import { SNICE, SNICE_SOLID, SNOW_SHELL, SNOW_SHELL_BACK } from './ice';
 
 export type Side = 'n' | 's' | 'e' | 'w'; // n = +Z, s = −Z, e = +X, w = −X
 
@@ -66,7 +66,23 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   const openings = o.openings ?? [];
 
   const [surfaceMat, wallMat] = o.mats ?? [SNICE, SNICE_SOLID];
-  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material = wallMat, collide = true) => {
+  // Tinted halls are coloured inside only: interior faces get the tint, exterior faces snow.
+  const tinted = !!o.mats;
+  const inside = (m: THREE.Material, side: THREE.Side) => {
+    const c = m.clone();
+    c.side = side;
+    return c;
+  };
+  const tintFront = tinted ? inside(surfaceMat, THREE.FrontSide) : surfaceMat;
+  const tintBack = tinted ? inside(surfaceMat, THREE.BackSide) : surfaceMat;
+  /** Box face order: +X, −X, +Y, −Y, +Z, −Z. Only the face pointing into the hall is tinted. */
+  const wallFaces = (side: Side): THREE.Material | THREE.Material[] => {
+    if (!tinted) return wallMat;
+    const faces: THREE.Material[] = Array(6).fill(SNOW_SHELL);
+    faces[{ w: 0, e: 1, s: 4, n: 5 }[side]] = wallMat;
+    return faces;
+  };
+  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material | THREE.Material[] = wallMat, collide = true) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
     m.position.set(x, y, z);
     m.castShadow = m.receiveShadow = true;
@@ -89,8 +105,8 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
       // Pieces standing on the floor reach 0.15 m below it, so no face lies exactly on the ground.
       const v0 = p.v0 === 0 ? -0.15 : p.v0;
       const hgt = p.v1 - v0;
-      if (alongX) block(mid, v0 + hgt / 2, fixed, len, hgt, T);
-      else block(fixed, v0 + hgt / 2, mid, T, hgt, len);
+      if (alongX) block(mid, v0 + hgt / 2, fixed, len, hgt, T, wallFaces(side));
+      else block(fixed, v0 + hgt / 2, mid, T, hgt, len, wallFaces(side));
     }
   }
 
@@ -98,10 +114,16 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   const vault = new THREE.CylinderGeometry(r, r, length, 28, 1, true, Math.PI / 2, Math.PI);
   vault.rotateX(Math.PI / 2); // axis along Z, open side down
   if (o.axis === 'x') vault.rotateY(Math.PI / 2);
-  const roof = new THREE.Mesh(vault, surfaceMat);
+  // Cylinder normals point outward: front faces are the outside, back faces the inside.
+  const roof = new THREE.Mesh(vault, tinted ? SNOW_SHELL : surfaceMat);
   roof.position.set(cx, o.wallH, cz);
   roof.castShadow = true; // two-sided: receiving shadows on itself caused striped acne
   group.add(roof);
+  if (tinted) {
+    const ceiling = new THREE.Mesh(vault, tintBack);
+    ceiling.position.copy(roof.position);
+    group.add(ceiling);
+  }
   world.createCollider(
     RAPIER.ColliderDesc.cuboid((o.x1 - o.x0) / 2, 0.2, (o.z1 - o.z0) / 2).setTranslation(cx, floorY + o.wallH + 0.2, cz),
   );
@@ -128,7 +150,15 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
       hole.lineTo(u - h.w / 2, 0);
       shape.holes.push(hole);
     }
-    const gable = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), o.gableMat?.[side] ?? surfaceMat);
+    const geo = new THREE.ShapeGeometry(shape, 24);
+    // A gable's front face points +Z (axis z) or −X (axis x, after its −90° turn): outward on the
+    // n and w ends, inward on the s and e ends.
+    const frontOut = side === 'n' || side === 'w';
+    const gable = new THREE.Mesh(geo, o.gableMat?.[side] ?? (tinted ? (frontOut ? SNOW_SHELL : tintFront) : surfaceMat));
+    if (tinted && !o.gableMat?.[side]) {
+      const other = new THREE.Mesh(geo, frontOut ? tintBack : SNOW_SHELL_BACK);
+      gable.add(other); // same plane, opposite side
+    }
     const at = side === 'n' ? o.z1 : side === 's' ? o.z0 : side === 'e' ? o.x1 : o.x0;
     if (o.axis === 'z') gable.position.set(cx, 0, at);
     else {

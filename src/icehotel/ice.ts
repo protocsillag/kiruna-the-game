@@ -117,6 +117,13 @@ export const SNICE = new THREE.MeshStandardMaterial({
 export const SNICE_SOLID = SNICE.clone();
 SNICE_SOLID.side = THREE.FrontSide;
 
+/** Outer snow shell for tinted halls: plain and snowy from outside, whatever the colour inside. */
+export const SNOW_SHELL = SNICE_SOLID.clone();
+SNOW_SHELL.emissiveIntensity = 0.08;
+SNOW_SHELL.color = new THREE.Color(0xf4f7fb);
+export const SNOW_SHELL_BACK = SNOW_SHELL.clone();
+SNOW_SHELL_BACK.side = THREE.BackSide;
+
 /** Snice washed in a room's coloured light, as a [two-sided, one-sided] pair for vaults and walls. */
 export function tintedSnice(color: number, intensity = 0.42): [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial] {
   const surface = SNICE.clone();
