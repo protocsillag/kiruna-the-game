@@ -4,7 +4,7 @@ import { ICEHOTEL } from '../world/terrain';
 import { MATS } from '../world/materials';
 import { furMaterials, pelt } from '../world/fur';
 import { createHall, type Opening } from './hall';
-import { ICE, ICE_GLOW, SNOW_RELIEF, glow, iceBlockMaterial, icePillar, part, textMaterial } from './ice';
+import { ICE, ICE_GLOW, SNOW_RELIEF, glow, iceBlockMaterial, icePillar, part, textMaterial, tintedIce, tintedSnice } from './ice';
 import { ROOMS } from './rooms';
 import { createBarGuests } from './guests';
 import type { Npcs } from '../npc/npcs';
@@ -83,17 +83,28 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   });
   const corridorDoors: Opening[] = ROOM_SLOTS.map((r) => ({ side: r.side < 0 ? 'w' : 'e', at: r.z, ...DOOR }));
   createHall(scene, world, Y, { ...CORRIDOR, axis: 'z', gables: false, openings: corridorDoors });
-  createHall(scene, world, Y, { ...BAR, axis: 'z', openings: [{ side: 'n', at: X, w: 3.6, h: 3.4 }] });
+  createHall(scene, world, Y, { ...BAR, axis: 'z', mats: tintedSnice(0x8c7cff, 0.32), openings: [{ side: 'n', at: X, w: 3.6, h: 3.4 }] });
 
   ROOM_SLOTS.forEach((slot, i) => {
     const near = slot.side < 0 ? CORRIDOR.x0 : CORRIDOR.x1;
     const far = near + slot.side * ROOM_DEPTH;
     const rect = { x0: Math.min(near, far), x1: Math.max(near, far), z0: slot.z - ROOM_HALF, z1: slot.z + ROOM_HALF };
+    const room = ROOMS[i];
     createHall(scene, world, Y, {
-      ...rect, wallH: 3.4, axis: 'x',
+      ...rect, wallH: 3.4, axis: 'x', mats: tintedSnice(room.color),
       openings: [{ side: slot.side < 0 ? 'e' : 'w', at: slot.z, ...DOOR }],
     });
-    const room = ROOMS[i];
+    // Coloured light strips along the room's floor edges (cheap: emissive + bloom, no lights).
+    const strip = glow(room.color, 2.4);
+    const cx = (near + far) / 2;
+    for (const e of [-1, 1]) part(scene, new THREE.BoxGeometry(ROOM_DEPTH - 0.6, 0.05, 0.1), strip, cx, Y + 0.03, slot.z + e * (ROOM_HALF - 0.32));
+    part(scene, new THREE.BoxGeometry(0.1, 0.05, ROOM_HALF * 2 - 0.6), strip, far - slot.side * 0.32, Y + 0.03, slot.z);
+    // A glowing ice frame round the doorway on the corridor side, in the room's colour.
+    const frameMat = tintedIce(room.color);
+    const fx = near - slot.side * 0.3;
+    for (const e of [-1, 1]) part(scene, new THREE.BoxGeometry(0.22, DOOR.h + 0.2, 0.32), frameMat, fx, Y + (DOOR.h + 0.2) / 2, slot.z + e * (DOOR.w / 2 + 0.16));
+    part(scene, new THREE.BoxGeometry(0.22, 0.24, DOOR.w + 0.64), frameMat, fx, Y + DOOR.h + 0.12, slot.z);
+    part(scene, new THREE.BoxGeometry(0.6, 0.04, DOOR.w), glow(room.color, 2.8), near, Y + 0.02, slot.z); // threshold
     roomRects.push({ ...rect, name: room.name });
     const g = new THREE.Group();
     g.position.set((near + far) / 2, Y, slot.z);
@@ -103,7 +114,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     solidify(world, g, Y);
     // Room name on an ice plaque above the corridor doorway.
     const plaque = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.45), textMaterial(room.name.toUpperCase(), '#d9f1ff', { glowing: true }));
-    plaque.position.set(near - slot.side * 0.27, Y + DOOR.h + 0.35, slot.z);
+    plaque.position.set(near - slot.side * 0.42, Y + DOOR.h + 0.5, slot.z);
     plaque.rotation.y = slot.side < 0 ? Math.PI / 2 : -Math.PI / 2; // face into the corridor
     scene.add(plaque);
   });
@@ -136,6 +147,30 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   part(deco, new THREE.BoxGeometry(1.1, 0.1, 3.4), ICE, X + 4.6, 1.15, F - 6.2); // desk top
   world.createCollider(RAPIER.ColliderDesc.cuboid(0.55, 0.6, 1.7).setTranslation(X + 4.6, Y + 0.6, F - 6.2));
   part(deco, new THREE.BoxGeometry(0.9, 0.45, 3.2), ICE, X - 6.0, 0.22, F - 6.2); // bench
+  // Centrepiece: a life-size reindeer carved from clear ice, on a glowing plinth.
+  const deer = new THREE.Group();
+  deer.position.set(X - 3.2, 0, F - 6.2);
+  deer.rotation.y = 0.6;
+  deco.add(deer);
+  part(deer, new THREE.CylinderGeometry(0.9, 1.0, 0.35, 24), ICE_GLOW, 0, 0.17, 0);
+  part(deer, new THREE.SphereGeometry(0.5, 18, 12), ICE, 0, 1.45, 0).scale.set(0.75, 0.75, 1.5);
+  part(deer, new THREE.CylinderGeometry(0.16, 0.22, 0.75, 10), ICE, 0, 1.9, 0.62).rotation.x = -0.6; // neck
+  const head = part(deer, new THREE.SphereGeometry(0.22, 14, 10), ICE, 0, 2.3, 0.88);
+  head.scale.set(0.8, 0.8, 1.35);
+  for (const sx of [-0.2, 0.2]) for (const sz of [-0.5, 0.5]) part(deer, new THREE.CylinderGeometry(0.06, 0.05, 1.0, 8), ICE, sx, 0.85, sz);
+  for (const s of [-1, 1]) {
+    const antler = new THREE.Group();
+    antler.position.set(s * 0.1, 2.45, 0.8);
+    antler.rotation.set(-0.3, 0, s * 0.5);
+    deer.add(antler);
+    part(antler, new THREE.CylinderGeometry(0.025, 0.035, 0.7, 6), ICE_GLOW, 0, 0.35, 0);
+    for (const [h, a] of [[0.25, 0.8], [0.45, -0.7], [0.6, 0.6]]) {
+      const tine = part(antler, new THREE.CylinderGeometry(0.018, 0.025, 0.32, 6), ICE_GLOW, 0, h, 0.08);
+      tine.rotation.x = a;
+      tine.position.z += Math.sin(a) * 0.12;
+    }
+  }
+  world.createCollider(RAPIER.ColliderDesc.cylinder(1.2, 1.0).setTranslation(X - 3.2, Y + 1.2, F - 6.2));
   world.createCollider(RAPIER.ColliderDesc.cuboid(0.45, 0.3, 1.6).setTranslation(X - 6.0, Y + 0.3, F - 6.2));
   const benchFur = pelt(furMaterials()[1], 0.45, 1.5);
   benchFur.position.set(X - 6.0, Y + 0.5, F - 6.2);
@@ -155,6 +190,15 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     }
   }
   for (const side of [-1, 1]) part(deco, new THREE.BoxGeometry(0.12, 0.06, 47), glow(0x7fd2ff, 2.2), X + side * 2.6, 0.03, (CORRIDOR.z0 + CORRIDOR.z1) / 2);
+  // Snow-relief swirls carved into the corridor walls between the doors.
+  for (let z = F - 20; z > F - 58; z -= 6) {
+    for (const side of [-1, 1]) {
+      if (doorZs.some((d) => d.side === side && Math.abs(d.z - z) < 2.6)) continue;
+      const swirl = part(deco, new THREE.TorusGeometry(0.55, 0.07, 8, 32, Math.PI * 1.6), SNOW_RELIEF, X + side * 2.72, 2.2, z);
+      swirl.rotation.set(0, Math.PI / 2, z * 0.7);
+      part(deco, new THREE.SphereGeometry(0.12, 12, 8), glow(0x9fe6ff, 1.4), X + side * 2.7, 2.2, z);
+    }
+  }
 
   // --- Ice Bar: counter, shelves of bottles, ice stools, chandelier, bartender ---
   part(deco, new THREE.BoxGeometry(8, 1.1, 0.8), glow(0x8fa8ff, 1.4), X - 1, 0.55, COUNTER_Z);

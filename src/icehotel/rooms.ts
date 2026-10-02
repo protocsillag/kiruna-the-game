@@ -149,10 +149,11 @@ const royal: RoomBuilder = (g) => {
   part(g, new THREE.BoxGeometry(2.6, 0.04, 1.6), WHITE, 0, 0.02, 0.6); // rug
 };
 
-export const ROOMS: { name: string; build: RoomBuilder }[] = [
-  { name: 'Cat & Mouse', build: catAndMouse },
-  { name: 'Birds of the North', build: birds },
-  { name: 'Ice Express', build: iceExpress },
-  { name: 'Lotus Dreams', build: lotus },
-  { name: 'Royal Suite', build: royal },
+/** Each room is washed in its own coloured light (like the real art suites). */
+export const ROOMS: { name: string; color: number; build: RoomBuilder }[] = [
+  { name: 'Cat & Mouse', color: 0xffc978, build: catAndMouse },
+  { name: 'Birds of the North', color: 0xc99cff, build: birds },
+  { name: 'Ice Express', color: 0x5fe0e6, build: iceExpress },
+  { name: 'Lotus Dreams', color: 0xff8cc6, build: lotus },
+  { name: 'Royal Suite', color: 0x6f9cff, build: royal },
 ];

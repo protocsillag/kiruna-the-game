@@ -23,6 +23,8 @@ export interface HallOpts {
   openings?: Opening[];
   /** Skip the gables (a corridor whose ends are covered by the halls it joins). */
   gables?: boolean;
+  /** Materials for this hall: [two-sided vault/gables, one-sided walls] (e.g. a room's tinted snice). */
+  mats?: [THREE.Material, THREE.Material];
   /** Material for a particular gable (e.g. the glowing ice-block facade). */
   gableMat?: Partial<Record<Side, THREE.Material>>;
 }
@@ -63,7 +65,8 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   const r = span / 2;
   const openings = o.openings ?? [];
 
-  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material = SNICE_SOLID, collide = true) => {
+  const [surfaceMat, wallMat] = o.mats ?? [SNICE, SNICE_SOLID];
+  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material = wallMat, collide = true) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
     m.position.set(x, y, z);
     m.castShadow = m.receiveShadow = true;
@@ -73,7 +76,8 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
 
   // Straight side walls (parallel to the vault axis).
   const sideWalls: Side[] = o.axis === 'z' ? ['w', 'e'] : ['s', 'n'];
-  const trim = o.gables === false ? 0 : EPS;
+  // Trim even without own gables: a corridor's wall ends meet the neighbouring halls' gables.
+  const trim = EPS;
   for (const side of sideWalls) {
     const alongX = side === 'n' || side === 's';
     const start = (alongX ? o.x0 : o.z0) + trim;
@@ -94,7 +98,7 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   const vault = new THREE.CylinderGeometry(r, r, length, 28, 1, true, Math.PI / 2, Math.PI);
   vault.rotateX(Math.PI / 2); // axis along Z, open side down
   if (o.axis === 'x') vault.rotateY(Math.PI / 2);
-  const roof = new THREE.Mesh(vault, SNICE);
+  const roof = new THREE.Mesh(vault, surfaceMat);
   roof.position.set(cx, o.wallH, cz);
   roof.castShadow = true; // two-sided: receiving shadows on itself caused striped acne
   group.add(roof);
@@ -124,7 +128,7 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
       hole.lineTo(u - h.w / 2, 0);
       shape.holes.push(hole);
     }
-    const gable = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), o.gableMat?.[side] ?? SNICE);
+    const gable = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), o.gableMat?.[side] ?? surfaceMat);
     const at = side === 'n' ? o.z1 : side === 's' ? o.z0 : side === 'e' ? o.x1 : o.x0;
     if (o.axis === 'z') gable.position.set(cx, 0, at);
     else {
