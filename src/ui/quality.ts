@@ -5,9 +5,11 @@ export class Quality {
   high = true;
   private button = document.getElementById('quality') as HTMLButtonElement;
 
-  constructor(private apply: (high: boolean) => void) {
+  constructor(private apply: (high: boolean) => void, defaultHigh = true, private keyHint = true) {
+    this.high = defaultHigh;
     try {
-      this.high = localStorage.getItem(KEY) !== 'low';
+      const saved = localStorage.getItem(KEY);
+      if (saved) this.high = saved === 'high';
     } catch {
       // storage unavailable (private window etc.): keep the default
     }
@@ -34,6 +36,6 @@ export class Quality {
 
   private refresh(): void {
     this.apply(this.high);
-    this.button.textContent = `${this.label}  (Q)`;
+    this.button.textContent = this.keyHint ? `${this.label}  (Q)` : this.label;
   }
 }

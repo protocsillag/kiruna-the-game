@@ -23,12 +23,18 @@ import { Player } from './player/player';
 import { Footprints } from './player/footprints';
 import { Breath } from './player/breath';
 import { setupOverlay, showError } from './ui/overlay';
+import { isTouchDevice, TouchControls } from './ui/touch';
 
 async function start(): Promise<void> {
+  // Phones/tablets get touch controls and lighter defaults; everything touch-only is gated on this.
+  const touch = isTouchDevice();
+  document.body.classList.toggle('touch', touch);
+  const maxRatio = touch ? 1.5 : 2;
+
   await RAPIER.init();
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, maxRatio));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -43,7 +49,7 @@ async function start(): Promise<void> {
   createTerrain(scene, world);
   createLake(scene, world);
   const camp = createCamp(scene, world);
-  createTrees(scene, world, camp.clearings, [{ x: 72, z: -96 }]); // + the lone spruce on the ice
+  createTrees(scene, world, camp.clearings, [{ x: 72, z: -96 }], touch ? 0.5 : 1); // + the lone spruce on the ice
   createTrail(scene);
   const sky = createSky(scene, renderer);
   const post = createPostFX(renderer, scene, camera);
@@ -55,7 +61,7 @@ async function start(): Promise<void> {
   const orbit = new OrbitCamera(camera);
   const player = new Player(world, scene, camp.spawn.x, camp.spawn.z);
   const fx = new ScreenFX();
-  const prompt = new Prompt();
+  const prompt = new Prompt(touch, () => input.tap('KeyE'));
   const sauna = createSauna(scene, world, player, () => fx.triggerShiver());
   const yurt = createYurt(scene, world, player, camp.yurt.x, camp.yurt.z, camp.yurt.rot);
   const igloo = createIgloo(scene, world, camp.igloo.x, camp.igloo.z, camp.igloo.rot);
@@ -69,12 +75,12 @@ async function start(): Promise<void> {
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
   const quality = new Quality((high) => {
-    renderer.setPixelRatio(high ? Math.min(devicePixelRatio, 2) : 1);
+    renderer.setPixelRatio(high ? Math.min(devicePixelRatio, maxRatio) : 1);
     renderer.setSize(innerWidth, innerHeight);
     post.setSize(innerWidth, innerHeight);
     post.bloom.enabled = high;
     sky.setQuality(high, renderer.getPixelRatio());
-  });
+  }, !touch, !touch); // phones start on Low; no "(Q)" hint without a keyboard
   const tint = new THREE.Color(0xffffff);
   let darkness = 0;
   let wasRiding = false;
@@ -87,9 +93,15 @@ async function start(): Promise<void> {
     renderer.setSize(innerWidth, innerHeight);
     post.setSize(innerWidth, innerHeight);
   });
-  setupOverlay(
+  const overlay = setupOverlay(
     () => {
-      input.requestLock();
+      if (touch) {
+        // Android can go fullscreen from a tap (iPhone Safari can't; it just stays in the page).
+        const root = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
+        if (!document.fullscreenElement) root.requestFullscreen?.().catch(() => {});
+      } else {
+        input.requestLock();
+      }
       wind.start();
       igloo.resume();
     },
@@ -97,7 +109,9 @@ async function start(): Promise<void> {
       wind.suspend();
       igloo.pause();
     },
+    touch,
   );
+  if (touch) new TouchControls(input, () => overlay.pause());
 
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {

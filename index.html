@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Kiruna – the game</title>
   </head>
   <body>
@@ -12,7 +12,7 @@
         <h1>Kiruna</h1>
         <p class="sub">Camp Alta · Swedish Lapland · January</p>
         <p id="status">Loading…</p>
-        <ul class="keys">
+        <ul class="keys desktop-only">
           <li><b>WASD</b>walk</li>
           <li><b>Shift</b>jog</li>
           <li><b>E</b>interact · ride</li>
@@ -23,6 +23,15 @@
           <li><b>Q</b>quality</li>
           <li><b>Esc</b>pause</li>
         </ul>
+        <ul class="keys touch-only">
+          <li><b>Left thumb</b>walk · drive</li>
+          <li><b>Right thumb</b>look</li>
+          <li><b>Pinch</b>zoom</li>
+          <li><b>Tap</b>the prompt to interact</li>
+          <li><b>Jog</b>run</li>
+          <li><b>◷ / +1h</b>pause · forward time</li>
+        </ul>
+        <p class="rotate-hint">Tip: turn your phone sideways</p>
         <button id="quality" type="button">Quality: High (Q)</button>
       </div>
     </div>

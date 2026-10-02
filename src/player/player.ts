@@ -85,8 +85,7 @@ export class Player {
       this.body.setNextKinematicTranslation({ x: r.x, y: r.y + FEET, z: r.z });
       return;
     }
-    const fwd = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
-    const side = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
+    const { fwd, side } = input.move(); // analog on touch, ±1 on keys
     this.jogging = input.down('ShiftLeft') || input.down('ShiftRight');
 
     const p = this.position;
@@ -99,8 +98,7 @@ export class Player {
       0,
       -Math.cos(cameraYaw) * fwd - Math.sin(cameraYaw) * side,
     );
-    const moving = dir.lengthSq() > 0;
-    if (moving) dir.normalize();
+    const moving = dir.lengthSq() > 0.0004; // length ≤ 1: a half-pushed stick walks slower
 
     const topSpeed = (this.jogging ? JOG : WALK) * (1 - deep * 0.4);
     const targetVel = dir.multiplyScalar(moving ? topSpeed : 0);

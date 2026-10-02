@@ -92,13 +92,14 @@ export class Snowmobile {
     this.throttle = 0;
     let steer = 0;
     if (this.riding) {
-      this.throttle = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
-      steer = (input.down('KeyA') ? 1 : 0) - (input.down('KeyD') ? 1 : 0);
+      const m = input.move(); // analog on touch, ±1 on keys
+      this.throttle = m.fwd;
+      steer = -m.side;
     }
 
     const top = MAX_SPEED * (1 - deep * 0.3);
-    if (this.throttle > 0) this.speed += ACCEL * dt;
-    else if (this.throttle < 0) this.speed -= (this.speed > 0.5 ? BRAKE : ACCEL * 0.4) * dt;
+    if (this.throttle > 0.05) this.speed += ACCEL * this.throttle * dt;
+    else if (this.throttle < -0.05) this.speed -= (this.speed > 0.5 ? BRAKE : ACCEL * 0.4) * -this.throttle * dt;
     else this.speed -= Math.sign(this.speed) * Math.min(Math.abs(this.speed), 2.5 * dt);
     this.speed -= this.speed * (0.05 + deep * 0.25) * dt; // drag, more in powder
     this.speed = THREE.MathUtils.clamp(this.speed, -5, top);

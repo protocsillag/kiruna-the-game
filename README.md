@@ -19,6 +19,8 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 | **Q** | toggle Low / High quality |
 | **Esc** | pause |
 
+**On a phone or tablet** (touch controls appear automatically, desktop is unchanged): left thumb = joystick (walk / drive), right thumb = look, pinch = zoom, tap the prompt to interact, **Jog** button, and ❚❚ / ◷ / +1h / HQ buttons for pause, pause time, forward time and quality. Phones start on Low quality with a lighter forest; landscape works best.
+
 ## What's there
 
 - **Camp Alta** on the lakeshore: lodge with chimney smoke, five timber cabins, a glass-roof cabin, woodpile, spruce and frosted-birch forest, red-cross trail poles across the ice.

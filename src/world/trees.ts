@@ -76,7 +76,13 @@ function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, matrices: THR
 }
 
 /** Spruce and frosted birch forest around camp, plus one lone spruce out on the ice. */
-export function createTrees(scene: THREE.Scene, world: World, clearings: Circle[], extra: { x: number; z: number }[]): void {
+export function createTrees(
+  scene: THREE.Scene,
+  world: World,
+  clearings: Circle[],
+  extra: { x: number; z: number }[],
+  density = 1,
+): void {
   const rand = mulberry32(42);
   const spruces: THREE.Matrix4[] = [];
   const birches: THREE.Matrix4[] = [];
@@ -92,7 +98,7 @@ export function createTrees(scene: THREE.Scene, world: World, clearings: Circle[
   };
 
   const half = WORLD_SIZE / 2 - 10;
-  for (let i = 0; i < 6000; i++) {
+  for (let i = 0; i < 6000 * density; i++) {
     const x = (rand() * 2 - 1) * half;
     const z = (rand() * 2 - 1) * half;
     const e = shoreDistance(x, z);

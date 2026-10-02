@@ -162,3 +162,153 @@ canvas {
 #quality:hover {
   background: rgba(232, 237, 247, 0.18);
 }
+
+/* ---------- Touch devices only (body.touch is set by main.ts) ---------- */
+
+.touch-only,
+.rotate-hint,
+.touch-layer,
+.touch-bar,
+.touch-jog {
+  display: none;
+}
+
+body.touch .desktop-only {
+  display: none;
+}
+
+body.touch .touch-only {
+  display: flex;
+}
+
+@media (orientation: portrait) {
+  body.touch .rotate-hint {
+    display: block;
+    margin: 18px 0 0;
+    font-size: 13px;
+    opacity: 0.7;
+  }
+}
+
+body.touch {
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body.touch .card {
+  padding: 20px max(16px, env(safe-area-inset-left));
+}
+
+body.touch .card h1 {
+  font-size: 44px;
+}
+
+body.touch .keys {
+  gap: 8px 16px;
+  font-size: 13px;
+}
+
+body.touch .touch-layer {
+  display: block;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+.stick-base {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 237, 247, 0.45);
+  background: rgba(14, 20, 38, 0.25);
+  pointer-events: none;
+}
+
+/* Resting spot so you can see where the stick lives. */
+.stick-base.idle {
+  left: calc(110px + env(safe-area-inset-left));
+  top: auto;
+  bottom: calc(110px + env(safe-area-inset-bottom));
+  margin: 0 0 -60px -60px;
+  opacity: 0.45;
+}
+
+.stick-knob {
+  position: absolute;
+  left: 35px;
+  top: 35px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(232, 237, 247, 0.55);
+}
+
+.touch-btn {
+  min-width: 46px;
+  height: 46px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f2f4f9;
+  background: rgba(14, 20, 38, 0.4);
+  border: 1px solid rgba(232, 237, 247, 0.45);
+  border-radius: 23px;
+  touch-action: none;
+}
+
+body.touch .touch-bar {
+  display: flex;
+  gap: 10px;
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+}
+
+body.touch .touch-jog {
+  display: block;
+  position: fixed;
+  right: calc(28px + env(safe-area-inset-right));
+  bottom: calc(40px + env(safe-area-inset-bottom));
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+}
+
+.touch-jog.on {
+  background: rgba(255, 213, 154, 0.35);
+  border-color: #ffd59a;
+}
+
+/* The prompt is the interact button on phones: make it big and tappable. */
+body.touch #prompt.visible {
+  pointer-events: auto;
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  padding: 10px 18px;
+  font-size: 18px;
+  border-radius: 26px;
+  background: rgba(14, 20, 38, 0.5);
+  border: 1px solid rgba(232, 237, 247, 0.45);
+}
+
+body.touch #status-line {
+  bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+body.touch #hud {
+  top: calc(18px + env(safe-area-inset-top));
+  right: calc(18px + env(safe-area-inset-right));
+}
+
+/* Stacking order (otherwise later-added layers, like the touch layer, would cover the title card
+   and prompt): canvas < touch layer < screen fx < HUD/prompt < touch buttons < title/pause card. */
+.touch-layer { z-index: 1; }
+.fx { z-index: 2; }
+#hud, #prompt, #status-line { z-index: 3; }
+.touch-bar, .touch-jog { z-index: 4; }
+#overlay { z-index: 10; }

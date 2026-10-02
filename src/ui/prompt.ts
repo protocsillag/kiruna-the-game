@@ -6,10 +6,18 @@ export class Prompt {
   private shown = '';
   private statusText = '';
 
-  constructor() {
+  /** On touch devices the prompt itself is the button: tapping it acts like pressing E. */
+  constructor(touch = false, onTap?: () => void) {
     this.box.id = 'prompt';
     const key = document.createElement('b');
-    key.textContent = 'E';
+    key.textContent = touch ? 'Tap' : 'E';
+    if (touch && onTap) {
+      this.box.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onTap();
+      });
+    }
     this.box.append(key, this.label);
     this.statusEl.id = 'status-line';
     document.body.append(this.statusEl, this.box);
