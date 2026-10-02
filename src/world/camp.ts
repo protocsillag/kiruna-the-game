@@ -21,6 +21,8 @@ export interface Camp {
   igloo: { x: number; z: number; rot: number };
   /** Gate of the husky farm east of the cabins (built by world/dogfarm.ts). */
   dogFarm: { x: number; z: number; rot: number };
+  /** The glass-roof cabin next to where the snowmobile is parked. */
+  glassCabin: { x: number; z: number; rot: number };
   /** Areas kept free of trees. */
   clearings: Circle[];
   update(dt: number, p: Palette, gust: number): void;
@@ -110,7 +112,8 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
 
   // The glass-roof cabin, for watching the aurora from bed.
   const gx = 12;
-  add(gx, shoreZ(gx) + 10, {
+  const glassCabin = { x: gx, z: shoreZ(gx) + 10, rot: faceLake(gx, shoreZ(gx) + 10) };
+  add(glassCabin.x, glassCabin.z, {
     w: 4.6, d: 4.2, h: 2.4, roofH: 1.6, wall: 'dark', glassRoof: true,
     windows: [{ face: 'front', at: 0, y: 1.3, w: 2.4, h: 1.2 }],
     door: { face: 'right', at: 0.8, w: 0.8, h: 1.9 },
@@ -153,6 +156,7 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
     yurt,
     igloo,
     dogFarm,
+    glassCabin,
     clearings,
     update(dt, p, gust) {
       MATS.window.emissiveIntensity = 1.6 + p.stars * 1.8;

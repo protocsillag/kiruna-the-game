@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER, { type World } from '@dimforge/rapier3d-compat';
-import { SNICE } from './ice';
+import { SNICE, SNICE_SOLID } from './ice';
 
 export type Side = 'n' | 's' | 'e' | 'w'; // n = +Z, s = −Z, e = +X, w = −X
 
@@ -61,7 +61,7 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   const r = span / 2;
   const openings = o.openings ?? [];
 
-  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material = SNICE, collide = true) => {
+  const block = (x: number, y: number, z: number, sx: number, sy: number, sz: number, mat: THREE.Material = SNICE_SOLID, collide = true) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
     m.position.set(x, y, z);
     m.castShadow = m.receiveShadow = true;
@@ -79,9 +79,11 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
     for (const p of pieces(length, o.wallH, holes)) {
       const mid = start + (p.u0 + p.u1) / 2;
       const len = p.u1 - p.u0;
-      const hgt = p.v1 - p.v0;
-      if (alongX) block(mid, p.v0 + hgt / 2, fixed, len, hgt, T);
-      else block(fixed, p.v0 + hgt / 2, mid, T, hgt, len);
+      // Pieces standing on the floor reach 0.15 m below it, so no face lies exactly on the ground.
+      const v0 = p.v0 === 0 ? -0.15 : p.v0;
+      const hgt = p.v1 - v0;
+      if (alongX) block(mid, v0 + hgt / 2, fixed, len, hgt, T);
+      else block(fixed, v0 + hgt / 2, mid, T, hgt, len);
     }
   }
 

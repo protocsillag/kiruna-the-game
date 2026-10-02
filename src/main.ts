@@ -116,8 +116,12 @@ async function start(): Promise<void> {
   const talk = { interaction: (p: THREE.Vector3) => npcs.interaction(p, !!player.locked) };
   const hotel = createIceHotel(scene, world, npcs, player);
   sky.hideSnowIn(hotel.bounds, 2);
-  // "Visit the Ice Hotel" sign beside Gyuri, facing the spawn point, arrow toward the hotel door.
-  createIceHotelSign(scene, world, onGround(gyuri.x - 0.5, gyuri.z + 2.2), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
+  // "Visit the Ice Hotel" sign just behind the glass-roof cabin (cabin-local +Z is its back),
+  // facing the spawn point, arrow toward the hotel door.
+  const gc = camp.glassCabin;
+  const sx = gc.x + 1.0 * Math.cos(gc.rot) + 5.2 * Math.sin(gc.rot);
+  const sz = gc.z - 1.0 * Math.sin(gc.rot) + 5.2 * Math.cos(gc.rot);
+  createIceHotelSign(scene, world, onGround(sx, sz), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
 
   const providers = [sled, dogs, fishing, hotel, talk, sauna, yurt, igloo];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);

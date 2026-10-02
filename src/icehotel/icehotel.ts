@@ -6,6 +6,7 @@ import { furMaterials, pelt } from '../world/fur';
 import { createHall, type Opening } from './hall';
 import { ICE, ICE_GLOW, SNOW_RELIEF, glow, iceBlockMaterial, icePillar, part, textMaterial } from './ice';
 import { ROOMS } from './rooms';
+import { createBarGuests } from './guests';
 import type { Npcs } from '../npc/npcs';
 import type { Player } from '../player/player';
 import type { Interaction } from '../activities/interaction';
@@ -33,6 +34,27 @@ const COUNTER_Z = F - 69.5;
 const DRINK_SECONDS = 120;
 
 type Rect = { x0: number; x1: number; z0: number; z1: number };
+
+/**
+ * Give every piece of furniture in `group` a box collider from its measured bounds. Rooms are
+ * rotated by exactly ±90°, so world-aligned boxes fit snugly. Flat things (rugs, floor holes) and
+ * decorations mounted high on the walls are skipped.
+ */
+function solidify(world: World, group: THREE.Object3D, floorY: number): void {
+  group.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  const size = new THREE.Vector3();
+  const centre = new THREE.Vector3();
+  for (const child of group.children) {
+    if (child instanceof THREE.Light) continue;
+    box.setFromObject(child);
+    box.getSize(size);
+    box.getCenter(centre);
+    if (size.y < 0.15 || box.min.y - floorY > 1.6) continue;
+    const h = (v: number) => Math.max(v / 2, 0.05); // flat pieces still get a real thickness
+    world.createCollider(RAPIER.ColliderDesc.cuboid(h(size.x), h(size.y), h(size.z)).setTranslation(centre.x, centre.y, centre.z));
+  }
+}
 const inside = (r: Rect, p: THREE.Vector3) => p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1;
 
 /** Areas to keep trees out of (the hotel, its forecourt, and the walk up from the lake). */
@@ -78,6 +100,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     g.rotation.y = slot.side < 0 ? -Math.PI / 2 : Math.PI / 2; // local +Z points from the door into the room
     scene.add(g);
     room.build(g);
+    solidify(world, g, Y);
     // Room name on an ice plaque above the corridor doorway.
     const plaque = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.45), textMaterial(room.name.toUpperCase(), '#d9f1ff', { glowing: true }));
     plaque.position.set(near - slot.side * 0.27, Y + DOOR.h + 0.35, slot.z);
@@ -113,6 +136,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   part(deco, new THREE.BoxGeometry(1.1, 0.1, 3.4), ICE, X + 4.6, 1.15, F - 6.2); // desk top
   world.createCollider(RAPIER.ColliderDesc.cuboid(0.55, 0.6, 1.7).setTranslation(X + 4.6, Y + 0.6, F - 6.2));
   part(deco, new THREE.BoxGeometry(0.9, 0.45, 3.2), ICE, X - 6.0, 0.22, F - 6.2); // bench
+  world.createCollider(RAPIER.ColliderDesc.cuboid(0.45, 0.3, 1.6).setTranslation(X - 6.0, Y + 0.3, F - 6.2));
   const benchFur = pelt(furMaterials()[1], 0.45, 1.5);
   benchFur.position.set(X - 6.0, Y + 0.5, F - 6.2);
   scene.add(benchFur);
@@ -137,6 +161,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   part(deco, new THREE.BoxGeometry(8.4, 0.12, 1.0), ICE, X - 1, 1.16, COUNTER_Z);
   world.createCollider(RAPIER.ColliderDesc.cuboid(4.2, 0.6, 0.5).setTranslation(X - 1, Y + 0.6, COUNTER_Z));
   for (const h of [0.9, 1.6, 2.3]) part(deco, new THREE.BoxGeometry(8, 0.08, 0.45), ICE, X - 1, h, F - 73.3);
+  world.createCollider(RAPIER.ColliderDesc.cuboid(4, 1.25, 0.25).setTranslation(X - 1, Y + 1.25, F - 73.3));
   const bottleColors = [0x2d6b3a, 0x8a2a22, 0xd8c060, 0x3a4d8a, 0xeaeaea, 0x6b3a8a];
   for (let i = 0; i < 30; i++) {
     const h = [0.9, 1.6, 2.3][i % 3];
@@ -176,7 +201,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   frameHole.absarc(0, RECEPTION.wallH, 6.9, 0, Math.PI, false);
   frameHole.lineTo(-6.9, 0);
   frame.holes.push(frameHole);
-  part(deco, new THREE.ExtrudeGeometry(frame, { depth: 1.2, bevelEnabled: false, curveSegments: 28 }), SNOW_RELIEF, X, 0, F - 0.2);
+  part(deco, new THREE.ExtrudeGeometry(frame, { depth: 1.2, bevelEnabled: false, curveSegments: 28 }), SNOW_RELIEF, X, -0.1, F - 0.2);
   const furDoor = part(deco, new THREE.BoxGeometry(1.3, 3.1, 0.08), furMaterials()[0], X + 1.3 + 0.65 * Math.cos(1.2), 1.55, F + 0.65 * Math.sin(1.2));
   furDoor.rotation.y = -1.2;
   const flames: THREE.Mesh[] = [];
@@ -220,6 +245,8 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     },
   };
 
+  const guests = createBarGuests(scene, world, npcs, { x: X, front: F, y: Y, counterZ: COUNTER_Z });
+
   const bounds = new THREE.Box3(new THREE.Vector3(X - 11.5, Y - 1, F - 74.5), new THREE.Vector3(X + 11.5, Y + 12, F + 0.5));
   return {
     bounds,
@@ -238,6 +265,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     },
     update(dt) {
       time += dt;
+      guests.update(dt);
       flames.forEach((f, i) => (f.scale.y = 0.85 + Math.sin(time * (11 + i * 3)) * 0.15));
       if (drinkLeft > 0) {
         drinkLeft -= dt;

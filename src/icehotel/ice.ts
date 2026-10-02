@@ -13,6 +13,9 @@ export const ICE_GLOW = new THREE.MeshStandardMaterial({
 export const SNICE = new THREE.MeshStandardMaterial({
   color: 0xeef3f8, emissive: 0x9fc6e6, emissiveIntensity: 0.14, roughness: 1, side: THREE.DoubleSide,
 });
+/** Same snice for solid wall blocks: one-sided, so their undersides don't z-fight with the floor. */
+export const SNICE_SOLID = SNICE.clone();
+SNICE_SOLID.side = THREE.FrontSide;
 export const SNOW_RELIEF = new THREE.MeshStandardMaterial({ color: 0xf4f7fb, emissive: 0xb8d4ec, emissiveIntensity: 0.18, roughness: 1 });
 export const DARK = new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.9 });
 export const WHITE = new THREE.MeshStandardMaterial({ color: 0xf6f4ef, roughness: 0.9 });
