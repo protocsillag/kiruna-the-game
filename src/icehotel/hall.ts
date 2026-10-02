@@ -28,6 +28,8 @@ export interface HallOpts {
 }
 
 const T = 0.5; // wall thickness
+/** Side walls stop this short of an arched end wall, so their end faces never lie in its plane. */
+const EPS = 0.03;
 
 type Rect = { u0: number; u1: number; v0: number; v1: number };
 
@@ -71,12 +73,13 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
 
   // Straight side walls (parallel to the vault axis).
   const sideWalls: Side[] = o.axis === 'z' ? ['w', 'e'] : ['s', 'n'];
+  const trim = o.gables === false ? 0 : EPS;
   for (const side of sideWalls) {
     const alongX = side === 'n' || side === 's';
-    const start = alongX ? o.x0 : o.z0;
+    const start = (alongX ? o.x0 : o.z0) + trim;
     const fixed = side === 'n' ? o.z1 : side === 's' ? o.z0 : side === 'e' ? o.x1 : o.x0;
     const holes = openings.filter((h) => h.side === side).map((h) => ({ u: h.at - start, w: h.w, h: h.h }));
-    for (const p of pieces(length, o.wallH, holes)) {
+    for (const p of pieces(length - trim * 2, o.wallH, holes)) {
       const mid = start + (p.u0 + p.u1) / 2;
       const len = p.u1 - p.u0;
       // Pieces standing on the floor reach 0.15 m below it, so no face lies exactly on the ground.
@@ -93,7 +96,7 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
   if (o.axis === 'x') vault.rotateY(Math.PI / 2);
   const roof = new THREE.Mesh(vault, SNICE);
   roof.position.set(cx, o.wallH, cz);
-  roof.castShadow = roof.receiveShadow = true;
+  roof.castShadow = true; // two-sided: receiving shadows on itself caused striped acne
   group.add(roof);
   world.createCollider(
     RAPIER.ColliderDesc.cuboid((o.x1 - o.x0) / 2, 0.2, (o.z1 - o.z0) / 2).setTranslation(cx, floorY + o.wallH + 0.2, cz),
@@ -128,7 +131,7 @@ export function createHall(scene: THREE.Scene, world: World, floorY: number, o: 
       gable.position.set(at, 0, cz);
       gable.rotation.y = -Math.PI / 2; // shape +u → world +Z, matching the hole and collider maths
     }
-    gable.receiveShadow = true;
+    gable.receiveShadow = false; // two-sided, like the vault
     group.add(gable);
     // Colliders for the gable up to wall height (above that the ceiling collider takes over).
     const local = holes.map((h) => ({ u: h.at - (centre - r), w: h.w, h: h.h }));

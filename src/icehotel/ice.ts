@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import { furMaterials, pelt } from '../world/fur';
 
-/** Clear, faintly glowing ice. */
+/**
+ * Faintly glowing ice. Opaque on purpose: translucent ice behind translucent ice depends on draw
+ * order and popped/vanished as the camera moved; the glow carries the look instead.
+ */
 export const ICE = new THREE.MeshStandardMaterial({
-  color: 0xa9dcf2, emissive: 0x4fa8d8, emissiveIntensity: 0.45, roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0.8,
+  color: 0x9fd3ee, emissive: 0x3f98c8, emissiveIntensity: 0.55, roughness: 0.08, metalness: 0.1,
 });
 /** Ice lit from within (counter fronts, lamp shades): bright enough to bloom. */
 export const ICE_GLOW = new THREE.MeshStandardMaterial({
-  color: 0xbfe8ff, emissive: 0x7cc8ff, emissiveIntensity: 1.6, roughness: 0.1, transparent: true, opacity: 0.85,
+  color: 0xbfe8ff, emissive: 0x7cc8ff, emissiveIntensity: 1.6, roughness: 0.1,
 });
 /** Snow-and-ice ("snice") walls and vaults, softly lit so interiors never go flat black. */
 export const SNICE = new THREE.MeshStandardMaterial({
@@ -44,6 +47,9 @@ export function iceBlockMaterial(): THREE.MeshStandardMaterial {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  // Gable UVs are in metres: one tile per 4 m gives ~1 × 0.5 m blocks (1 m tiles shimmered as a fine checker).
+  tex.repeat.set(0.25, 0.25);
+  tex.anisotropy = 8;
   tex.colorSpace = THREE.SRGBColorSpace;
   return new THREE.MeshStandardMaterial({
     map: tex, emissiveMap: tex, emissive: 0x6fb8e8, emissiveIntensity: 1.1, roughness: 0.2, side: THREE.DoubleSide,
@@ -66,7 +72,7 @@ export function textMaterial(text: string, color: string, opts: { w?: number; gl
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return new THREE.MeshStandardMaterial({
-    map: tex, transparent: true, alphaTest: 0.2, roughness: 0.8,
+    map: tex, alphaTest: 0.2, roughness: 0.8, // cut-out letters: no transparency sorting needed
     ...(opts.glowing ? { emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 1.8 } : {}),
   });
 }

@@ -25,7 +25,8 @@ const catAndMouse: RoomBuilder = (g) => {
   niche.holes.push(inner);
   const arch = part(g, new THREE.ExtrudeGeometry(niche, { depth: 0.5, bevelEnabled: false, curveSegments: 20 }), SNOW_RELIEF, 0, 0, 3.4);
   arch.rotation.y = Math.PI; // face the door
-  const holeMat = new THREE.MeshStandardMaterial({ color: 0xc4d2e2, roughness: 1 });
+  // Shallow 'cheese holes': a shade darker than the snow, softly lit so they don't read as black spots.
+  const holeMat = new THREE.MeshStandardMaterial({ color: 0xd6e2ee, emissive: 0x8fb4d6, emissiveIntensity: 0.12, roughness: 1 });
   for (const [x, y, r] of [[-2, 2.6, 0.22], [-1.9, 1.4, 0.14], [1.95, 2.2, 0.26], [2.05, 0.9, 0.15], [-0.4, 3.9, 0.18], [0.9, 3.7, 0.12], [-1.2, 3.4, 0.1]]) {
     const hole = part(g, new THREE.CircleGeometry(r, 18), holeMat, x, y, 2.88); // on the niche's front face
     hole.rotation.y = Math.PI;
