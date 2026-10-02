@@ -15,10 +15,12 @@ import { Quality } from './ui/quality';
 import { Snowmobile } from './vehicles/snowmobile';
 import { DogSled } from './vehicles/dogsled';
 import { createDogFarm } from './world/dogfarm';
-import { groundHeight } from './world/terrain';
+import { groundHeight, ICEHOTEL } from './world/terrain';
 import { Npcs } from './npc/npcs';
 import { createWhiskeyPair } from './npc/whiskey';
 import { createIceFishing } from './activities/icefishing';
+import { createIceHotel, iceHotelClearings } from './icehotel/icehotel';
+import { createIceHotelSign } from './world/signpost';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -55,6 +57,7 @@ async function start(): Promise<void> {
   createTerrain(scene, world);
   createLake(scene, world);
   const camp = createCamp(scene, world);
+  camp.clearings.push(...iceHotelClearings());
   createTrees(scene, world, camp.clearings, [{ x: 72, z: -96 }], touch ? 0.5 : 1); // + the lone spruce on the ice
   createTrail(scene);
   const sky = createSky(scene, renderer);
@@ -111,8 +114,12 @@ async function start(): Promise<void> {
   const fishing = createIceFishing(scene, world, npcs, player,
     new THREE.Vector3(sauna.centre.x + 9.5, 0, sauna.centre.z - 2.5));
   const talk = { interaction: (p: THREE.Vector3) => npcs.interaction(p, !!player.locked) };
+  const hotel = createIceHotel(scene, world, npcs, player);
+  sky.hideSnowIn(hotel.bounds, 2);
+  // "Visit the Ice Hotel" sign beside Gyuri, facing the spawn point, arrow toward the hotel door.
+  createIceHotelSign(scene, world, onGround(gyuri.x - 0.5, gyuri.z + 2.2), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
 
-  const providers = [sled, dogs, fishing, talk, sauna, yurt, igloo];
+  const providers = [sled, dogs, fishing, hotel, talk, sauna, yurt, igloo];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
@@ -194,7 +201,7 @@ async function start(): Promise<void> {
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
     prompt.status(
-      sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
+      sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? hotel.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
     );
     igloo.update(player.position);
     fx.update(dt, heat);
@@ -212,6 +219,7 @@ async function start(): Promise<void> {
     npcs.update(dt, player.position, camera);
     whiskey.update(dt);
     fishing.update(dt, tint);
+    hotel.update(dt);
     farm.update(dt);
     sauna.update(dt, tint);
     yurt.update(dt, tint);

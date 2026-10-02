@@ -98,7 +98,8 @@ export function createTrees(
   };
 
   const half = WORLD_SIZE / 2 - 10;
-  for (let i = 0; i < 6000 * density; i++) {
+  const candidates = 6000 * (WORLD_SIZE / 800) ** 2 * density; // same forest density at any world size
+  for (let i = 0; i < candidates; i++) {
     const x = (rand() * 2 - 1) * half;
     const z = (rand() * 2 - 1) * half;
     const e = shoreDistance(x, z);

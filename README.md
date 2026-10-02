@@ -28,6 +28,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 - **Dog sled** at the husky farm east of camp: six huskies pull you on their own; you only brake (S) and steer (A/D). They stop when you step off, and now and then one of them has to go.
 - **People around camp** to talk to (E): Balazs & Richard sharing a smoky whiskey by the Ice Hostel, Gyuri at the snowmobile, Thomasz at the husky farm, Barbara & Zsofia in the sauna.
 - **Ice fishing** next to the sauna with Alex & Boti by a campfire on the ice: sit down on the free reindeer fur and try your luck (you won't catch anything).
+- **ICEHOTEL** across the lake (follow the red-cross poles, or the sign next to Gyuri): reception, a long ice corridor with five themed art rooms (Cat & Mouse, Birds of the North, Ice Express, Lotus Dreams, Royal Suite), and the Ice Bar at the end, where you can order a drink in a glass made of ice.
 - **Snowmobile** parked at camp: arcade handling that slides a little on the ice, headlight, tracks, snow spray and engine sound.
 - **Polar January light**: a 24-minute day where the sun barely clears the horizon at noon, long blue hours, stars and a drifting **aurora** at night, light snowfall and wind.
 

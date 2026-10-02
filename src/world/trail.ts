@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { groundHeight, LAKE, shoreZ } from './terrain';
+import { farShoreZ, groundHeight, ICEHOTEL, shoreZ } from './terrain';
 import { MATS, mesh } from './materials';
 
 const SPACING = 28;
@@ -9,7 +9,7 @@ const RED = new THREE.MeshStandardMaterial({ color: 0xc4202a, roughness: 0.6 });
 export function createTrail(scene: THREE.Scene): void {
   const startX = 6;
   const start = new THREE.Vector2(startX, shoreZ(startX) - 6);
-  const end = new THREE.Vector2(55, LAKE.z - LAKE.rz + 30);
+  const end = new THREE.Vector2(ICEHOTEL.x + 6, farShoreZ(ICEHOTEL.x + 6) + 6); // just off the Ice Hotel's shore
   const length = start.distanceTo(end);
   const n = Math.floor(length / SPACING);
   const dir = end.clone().sub(start).normalize();

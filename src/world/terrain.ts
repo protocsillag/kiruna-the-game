@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import RAPIER, { type World } from '@dimforge/rapier3d-compat';
 import { clamp, fbm, smoothstep } from './noise';
 
-export const WORLD_SIZE = 800;
-const SEGMENTS = 256;
+export const WORLD_SIZE = 1000; // room for the Ice Hotel behind the far shore
+const SEGMENTS = 320; // ≈3.1 m grid, as before
 
 /** The frozen lake: an ellipse north of camp. */
 export const LAKE = { x: 0, z: -190, rx: 260, rz: 170 };
@@ -20,15 +20,49 @@ export function shoreDistance(x: number, z: number): number {
   return (Math.sqrt(dx * dx + dz * dz) - 1 + wobble) * Math.min(LAKE.rx, LAKE.rz);
 }
 
-/** Raw terrain height (lake bed lies below the ice). */
-export function heightAt(x: number, z: number): number {
+/** Z of the far shoreline at a given x (searching away from camp, across the lake). */
+export function farShoreZ(x: number): number {
+  for (let z = LAKE.z; z > -WORLD_SIZE / 2; z -= 0.5) if (shoreDistance(x, z) > 0) return z;
+  return -WORLD_SIZE / 2;
+}
+
+/** Natural terrain before the Ice Hotel pad is levelled. */
+function naturalHeight(x: number, z: number, hotelX: number, hotelZ: number): number {
   const e = shoreDistance(x, z);
   if (e <= 0) return THREE.MathUtils.lerp(-0.3, 0.15, smoothstep(-3, 0, e));
-  const campFlat = smoothstep(35, 90, Math.hypot(x - CAMP.x, z - CAMP.z));
-  const hillAmp = (3 + smoothstep(0, 280, e) * 26) * (0.25 + 0.75 * campFlat);
+  const flat = Math.min(
+    smoothstep(35, 90, Math.hypot(x - CAMP.x, z - CAMP.z)),
+    smoothstep(45, 100, Math.hypot(x - hotelX, z - hotelZ)),
+  );
+  const hillAmp = (3 + smoothstep(0, 280, e) * 26) * (0.25 + 0.75 * flat);
   const hills = (fbm(x * 0.006, z * 0.006, 4, 1) * 0.5 + 0.5) * hillAmp;
   const detail = fbm(x * 0.05, z * 0.05, 2, 3) * 0.25;
   return 0.15 + smoothstep(0, 35, e) * (0.8 + hills + detail);
+}
+
+/**
+ * The Ice Hotel: straight across the lake from camp (where the red-cross trail ends), front door
+ * facing the lake (+Z). `front` is the door's z; the building extends 74 m back (−Z). `y` is the
+ * levelled floor height.
+ */
+const HOTEL_X = 45;
+const HOTEL_FRONT = farShoreZ(HOTEL_X) - 22;
+const HOTEL_DEPTH = 74;
+const PAD = { x0: HOTEL_X - 15, x1: HOTEL_X + 15, z0: HOTEL_FRONT - HOTEL_DEPTH - 2, z1: HOTEL_FRONT + 3, blend: 10 };
+export const ICEHOTEL = {
+  x: HOTEL_X,
+  front: HOTEL_FRONT,
+  depth: HOTEL_DEPTH,
+  y: naturalHeight(HOTEL_X, HOTEL_FRONT, HOTEL_X, HOTEL_FRONT - HOTEL_DEPTH / 2),
+};
+
+/** Raw terrain height (lake bed lies below the ice); levelled flat under the Ice Hotel. */
+export function heightAt(x: number, z: number): number {
+  const h = naturalHeight(x, z, HOTEL_X, HOTEL_FRONT - HOTEL_DEPTH / 2);
+  const dx = Math.max(0, PAD.x0 - x, x - PAD.x1);
+  const dz = Math.max(0, PAD.z0 - z, z - PAD.z1);
+  const pad = (1 - smoothstep(0, PAD.blend, dx)) * (1 - smoothstep(0, PAD.blend, dz));
+  return pad > 0 ? THREE.MathUtils.lerp(h, ICEHOTEL.y, pad) : h;
 }
 
 /** Walkable surface height: terrain or ice, whichever is higher. */
