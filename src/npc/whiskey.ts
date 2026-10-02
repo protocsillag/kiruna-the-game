@@ -38,7 +38,7 @@ export function createWhiskeyPair(scene: THREE.Scene, npcs: Npcs, igloo: { x: nu
   const pair: Npc[] = [
     npcs.add({ name: 'Balazs', line: LINE, at: at(2.6, -5.8), heading: rot + Math.PI / 2, solid: true,
       look: { jacket: 0x3d6b3f, hat: 0xc9b07a, scarf: 0x7a2a22 } }),
-    npcs.add({ name: 'Richard', line: LINE, at: at(3.75, -5.22), heading: rot - Math.PI / 2, solid: true,
+    npcs.add({ name: 'Richard', line: 'Jimmy is the king. Do you want to build a bigger ice hostel with us?', at: at(3.75, -5.22), heading: rot - Math.PI / 2, solid: true,
       look: { jacket: 0x2b3d63, hat: 0xb8322a, scarf: 0xd8d2c4 } }),
   ];
 

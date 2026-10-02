@@ -100,11 +100,11 @@ async function start(): Promise<void> {
   const inSauna = (p: THREE.Vector3) => sauna.isInside(p);
   const saunaLine = 'Put some more wood in the sauna stove.';
   [
-    { name: 'Barbara', lx: -2.0, look: { towel: 0xf2c4cc, hat: null, hair: 0xd9b26f, bun: true, skin: 0xedc9ad } },
-    { name: 'Zsofia', lx: -1.1, look: { towel: 0xf4f1ea, hat: null, hair: 0x3e2a20, bun: true, skin: 0xe3bc9c } },
+    { name: 'Barbara', lx: -2.0, line: saunaLine, look: { towel: 0xf2c4cc, hat: null, hair: 0xd9b26f, bun: true, skin: 0xedc9ad } },
+    { name: 'Zsofia', lx: -1.1, line: 'Is the aurora visible outside?', look: { towel: 0xf4f1ea, hat: null, hair: 0x3e2a20, bun: true, skin: 0xe3bc9c } },
   ].forEach((g) => {
     const seat = sauna.upperSeat(g.lx);
-    npcs.add({ name: g.name, line: saunaLine, look: g.look, at: seat.root, heading: 0, pose: 'sit',
+    npcs.add({ name: g.name, line: g.line, look: g.look, at: seat.root, heading: 0, pose: 'sit',
       talkFrom: seat.front, talkRadius: 0.9, reachable: inSauna });
   });
   const whiskey = createWhiskeyPair(scene, npcs, camp.igloo);

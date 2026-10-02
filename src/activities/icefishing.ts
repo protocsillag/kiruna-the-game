@@ -56,12 +56,12 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
   const facing = (s: THREE.Vector3) => Math.atan2(hole.x - s.x, hole.z - s.z);
   const seatRoot = (s: THREE.Vector3) => new THREE.Vector3(s.x, SEAT + 0.12 - 0.9, s.z);
   const fishers = [
-    { name: 'Alex', look: { jacket: 0x2f6fa8, hat: 0xe0a83a, scarf: 0x3a3a3a } },
-    { name: 'Boti', look: { jacket: 0x5a5f66, hat: 0x2d5a3a, scarf: 0xb8322a } },
+    { name: 'Alex', line: LINE, look: { jacket: 0x2f6fa8, hat: 0xe0a83a, scarf: 0x3a3a3a } },
+    { name: 'Boti', line: 'How much is the fish?', look: { jacket: 0x5a5f66, hat: 0x2d5a3a, scarf: 0xb8322a } },
   ].map((f, i) => {
     const s = spots[i];
     world.createCollider(RAPIER.ColliderDesc.cylinder(0.35, 0.4).setTranslation(s.x, ICE_Y + 0.35, s.z));
-    return npcs.add({ ...f, line: LINE, at: seatRoot(s), heading: facing(s), pose: 'sit', talkFrom: s, talkRadius: 1.9 }).character;
+    return npcs.add({ ...f, at: seatRoot(s), heading: facing(s), pose: 'sit', talkFrom: s, talkRadius: 1.9 }).character;
   });
 
   // Rods: placed each frame from the hand toward the hole, with a line down into the water.
