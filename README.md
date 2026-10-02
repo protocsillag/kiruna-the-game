@@ -25,6 +25,7 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 
 - **Camp Alta** on the lakeshore: lodge with chimney smoke, five timber cabins, a glass-roof cabin, woodpile, spruce and frosted-birch forest, red-cross trail poles across the ice.
 - **Sauna on the ice**: walk in, stoke the stove (E), watch the temperature climb, sit on the bench. The **ice hole** next to it is for a cold dip.
+- **Dog sled** at the husky farm east of camp: six huskies pull you on their own; you only brake (S) and steer (A/D). They stop when you step off, and now and then one of them has to go.
 - **Snowmobile** parked at camp: arcade handling that slides a little on the ice, headlight, tracks, snow spray and engine sound.
 - **Polar January light**: a 24-minute day where the sun barely clears the horizon at noon, long blue hours, stars and a drifting **aurora** at night, light snowfall and wind.
 

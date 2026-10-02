@@ -113,7 +113,10 @@ export class Player {
     }
 
     const grounded = this.controller.computedGrounded();
-    this.velY = grounded ? -2 : this.velY - GRAVITY * dt;
+    // No push-down while grounded: pressing into the ground every frame made Rapier's controller
+    // intermittently return zero horizontal movement (stalls, sinking into the ice). Snap-to-ground
+    // already keeps contact.
+    this.velY = grounded ? 0 : this.velY - GRAVITY * dt;
 
     this.controller.computeColliderMovement(this.collider, {
       x: this.velocity.x * dt,

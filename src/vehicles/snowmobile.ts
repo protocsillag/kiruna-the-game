@@ -117,7 +117,10 @@ export class Snowmobile {
     this.velocity.copy(fwd).multiplyScalar(this.speed).addScaledVector(right, slip);
 
     const grounded = this.controller.computedGrounded();
-    this.velY = grounded ? -1.5 : this.velY - GRAVITY * dt;
+    // No push-down while grounded: pressing into the ground every frame made Rapier's controller
+    // intermittently return zero horizontal movement (stalls, sinking into the ice). Snap-to-ground
+    // already keeps contact.
+    this.velY = grounded ? 0 : this.velY - GRAVITY * dt;
     const want = { x: this.velocity.x * dt, y: this.velY * dt, z: this.velocity.z * dt };
     this.controller.computeColliderMovement(this.collider, want, undefined, undefined, this.ignore);
     const m = this.controller.computedMovement();

@@ -13,6 +13,8 @@ import { Prompt } from './ui/prompt';
 import { ScreenFX } from './ui/screenfx';
 import { Quality } from './ui/quality';
 import { Snowmobile } from './vehicles/snowmobile';
+import { DogSled } from './vehicles/dogsled';
+import { createDogFarm } from './world/dogfarm';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -70,8 +72,10 @@ async function start(): Promise<void> {
 
   // Parked at camp, between the spawn point and the shore, nose to the lake.
   const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
-  const providers = [sled, sauna, yurt, igloo];
-  const ignored = new Set([player.collider.handle, sled.collider.handle, ...sauna.cameraIgnore]);
+  const farm = createDogFarm(scene, world, camp.dogFarm);
+  const dogs = new DogSled(scene, world, player, farm.team.x, farm.team.z, farm.team.heading);
+  const providers = [sled, dogs, sauna, yurt, igloo];
+  const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
   const quality = new Quality((high) => {
@@ -126,14 +130,17 @@ async function start(): Promise<void> {
     }
 
     sled.drive(dt, input);
+    dogs.drive(dt, input);
     player.update(dt, input, orbit.yaw);
     world.timestep = dt;
     world.step();
     sled.sync(dt, darkness, tint, wind.gust);
+    dogs.sync(dt, tint);
     player.sync(dt);
-    if (sled.riding !== wasRiding) {
-      wasRiding = sled.riding;
-      orbit.setZoom(sled.riding ? 8.5 : 6);
+    const vehicle = sled.riding ? sled : dogs.riding ? dogs : null;
+    if (!!vehicle !== wasRiding) {
+      wasRiding = !!vehicle;
+      orbit.setZoom(vehicle === dogs ? 10 : vehicle ? 8.5 : 6); // the dog team is long: pull back more
     }
 
     const indoors = sauna.isInside(player.position) || yurt.isInside(player.position);
@@ -149,12 +156,12 @@ async function start(): Promise<void> {
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
     prompt.status(
-      sled.status() ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
+      sled.status() ?? dogs.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
     );
     igloo.update(player.position);
     fx.update(dt, heat);
     orbit.shake = fx.shake;
-    orbit.follow(dt, sled.heading, sled.riding && Math.abs(sled.speed) > 3);
+    orbit.follow(dt, vehicle?.heading ?? 0, !!vehicle && Math.abs(vehicle.speed) > 2);
     if (sauna.dipping) orbit.lookDown(dt);
     orbit.update(dt, player.cameraFocus, world, cameraSees);
     wind.update(dt);
@@ -163,6 +170,7 @@ async function start(): Promise<void> {
     darkness = palette.stars;
     tint.copy(palette.hemiSky).multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
     camp.update(dt, palette, wind.gust);
+    farm.update(dt);
     sauna.update(dt, tint);
     yurt.update(dt, tint);
     hud.update(sky.clock);

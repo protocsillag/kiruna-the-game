@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import RAPIER, { type World } from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { groundHeight, LAKE, shoreZ } from './terrain';
+import { groundHeight, LAKE, shoreDistance, shoreZ } from './terrain';
 import { createBuilding, type BuildingOpts } from './buildings';
 import { MATS, mesh } from './materials';
 import { Smoke } from './smoke';
@@ -19,6 +19,8 @@ export interface Camp {
   yurt: { x: number; z: number; rot: number };
   /** The "Ice Hostel" snow igloo beside the lodge (built by activities/igloo.ts). */
   igloo: { x: number; z: number; rot: number };
+  /** Gate of the husky farm east of the cabins (built by world/dogfarm.ts). */
+  dogFarm: { x: number; z: number; rot: number };
   /** Areas kept free of trees. */
   clearings: Circle[];
   update(dt: number, p: Palette, gust: number): void;
@@ -124,6 +126,23 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
   };
   clearings.push({ x: igloo.x, z: igloo.z, r: 8 });
 
+  // Husky farm east of the last cabin, gate facing the lake, with an open run down to the shore.
+  const farmX = 58;
+  const farmZ = shoreZ(farmX) + 34;
+  const dogFarm = { x: farmX, z: farmZ, rot: faceLake(farmX, farmZ) };
+  const back = new THREE.Vector3(Math.sin(dogFarm.rot), 0, Math.cos(dogFarm.rot)); // into the yard
+  const side = new THREE.Vector3(Math.cos(dogFarm.rot), 0, -Math.sin(dogFarm.rot)); // farm-local +X
+  clearings.push(
+    { x: farmX + back.x * 7, z: farmZ + back.z * 7, r: 13 }, // yard
+    { x: farmX - side.x * 11.5 + back.x * 7, z: farmZ - side.z * 11.5 + back.z * 7, r: 5 }, // kennel shed
+  );
+  for (let d = 0; ; d += 7) {
+    const x = farmX - back.x * d;
+    const z = farmZ - back.z * d;
+    if (shoreDistance(x, z) < 0) break;
+    clearings.push({ x, z, r: 7 });
+  }
+
   const yurtX = -18;
   const yurtZ = shoreZ(yurtX) + 22;
   const yurt = { x: yurtX, z: yurtZ, rot: faceLake(yurtX, yurtZ) };
@@ -133,6 +152,7 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
     spawn,
     yurt,
     igloo,
+    dogFarm,
     clearings,
     update(dt, p, gust) {
       MATS.window.emissiveIntensity = 1.6 + p.stars * 1.8;

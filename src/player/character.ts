@@ -3,7 +3,7 @@ import { damp } from '../world/noise';
 
 const mat = (color: number, roughness = 0.85) => new THREE.MeshStandardMaterial({ color, roughness });
 
-export type Pose = 'stand' | 'sit';
+export type Pose = 'stand' | 'sit' | 'grip';
 
 export interface Character {
   root: THREE.Group;
@@ -103,6 +103,15 @@ export function createCharacter(): Character {
     head,
     animate(dt, speed, pose) {
       time += dt;
+      if (pose === 'grip') {
+        // Standing on sled runners, both hands forward on the handlebar.
+        for (const leg of legs) leg.rotation.x = 0;
+        for (const arm of arms) arm.rotation.x = -1.15;
+        hips.position.y = 0.9;
+        hips.rotation.x = 0.18;
+        amp = 0;
+        return;
+      }
       if (pose === 'sit') {
         // Thighs forward and slightly down, hands resting on the knees.
         for (const leg of legs) leg.rotation.x = -1.15;
