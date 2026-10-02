@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import RAPIER, { type World } from '@dimforge/rapier3d-compat';
 import { furMaterials, pelt } from '../world/fur';
-import { ICE, glow, part } from './ice';
+import { DARK, ICE, glow, part } from './ice';
 import type { Look } from '../player/character';
 import type { Npc, Npcs } from '../npc/npcs';
 
@@ -103,17 +103,66 @@ export function createBarGuests(
     name: 'Jimmy', line: "I can't lose yet. Not yet. I still want to live.",
     at: new THREE.Vector3(tx, Y + 0.5 + 0.12 - 0.9, tz).add(new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading)).multiplyScalar(0.05)),
     heading, pose: 'sit', talkFrom: new THREE.Vector3(tx, Y, tz).add(new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading)).multiplyScalar(1.2)),
-    talkRadius: 1.3, look: { jacket: 0xf0ede6, pants: 0x1a1a22, hat: null, hair: 0x1a1410, scarf: 0xe8b830 },
+    talkRadius: 1.3, look: { jacket: 0xf0ede6, pants: 0x1a1a22, hat: null, hair: 0xe6c266, scarf: 0xe8b830 },
   });
   const c = crown();
   c.position.y = 0.13;
   jimmy.character.head.add(c);
+  // Long blonde curls falling from under the crown, down past the shoulders.
+  const curlMat = new THREE.MeshStandardMaterial({ color: 0xe6c266, roughness: 0.75 });
+  for (let row = 0; row < 5; row++) {
+    const n = 9 - row;
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * 0.3 + (i / (n - 1)) * Math.PI * 1.4; // round the back and sides, open at the face
+      const r = 0.13 + row * 0.012;
+      part(jimmy.character.head, new THREE.SphereGeometry(0.055 + (row % 2) * 0.01, 8, 6), curlMat,
+        Math.sin(a) * r, 0.02 - row * 0.085, Math.cos(a) * r); // a = π is the back of the head; the face (+Z) stays clear
+    }
+  }
   const cape = part(jimmy.character.root, new THREE.BoxGeometry(0.62, 1.15, 0.04), new THREE.MeshStandardMaterial({ color: 0x9a1a24, roughness: 0.7 }), 0, 1.0, -0.2);
   cape.rotation.x = 0.12;
+
+  // A rooster standing at the King's feet.
+  const rooster = new THREE.Group();
+  const rf = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
+  const rr = new THREE.Vector3(-rf.z, 0, rf.x);
+  rooster.position.set(tx, Y, tz).addScaledVector(rf, 0.95).addScaledVector(rr, 0.55);
+  rooster.rotation.y = heading + 0.9;
+  scene.add(rooster);
+  const plumage = new THREE.MeshStandardMaterial({ color: 0xa8461e, roughness: 0.8 });
+  const tailMat = new THREE.MeshStandardMaterial({ color: 0x14302a, roughness: 0.4, metalness: 0.3 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xd2202a, roughness: 0.6 });
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xe8b830, roughness: 0.6 });
+  part(rooster, new THREE.SphereGeometry(0.16, 14, 10), plumage, 0, 0.32, 0).scale.set(0.85, 0.9, 1.2);
+  const neck = new THREE.Group();
+  neck.position.set(0, 0.42, 0.12);
+  rooster.add(neck);
+  part(neck, new THREE.SphereGeometry(0.075, 12, 8), plumage, 0, 0.1, 0.03);
+  part(neck, new THREE.ConeGeometry(0.025, 0.07, 6), yellow, 0, 0.09, 0.12).rotation.x = Math.PI / 2;
+  for (let i = 0; i < 4; i++) part(neck, new THREE.SphereGeometry(0.024, 6, 4), red, 0, 0.17 + Math.sin(i) * 0.01, 0.06 - i * 0.03);
+  part(neck, new THREE.SphereGeometry(0.022, 6, 4), red, 0, 0.04, 0.1).scale.y = 1.6; // wattle
+  for (const s of [-1, 1]) part(neck, new THREE.SphereGeometry(0.011, 5, 4), DARK, s * 0.05, 0.12, 0.08);
+  for (let i = 0; i < 5; i++) {
+    const f = part(rooster, new THREE.TorusGeometry(0.16 - i * 0.015, 0.018, 5, 10, Math.PI * 0.9), tailMat, (i - 2) * 0.03, 0.42, -0.14);
+    f.rotation.set(0, Math.PI / 2, -0.3 - i * 0.08);
+  }
+  for (const s of [-1, 1]) {
+    part(rooster, new THREE.CylinderGeometry(0.012, 0.012, 0.2, 5), yellow, s * 0.05, 0.1, 0);
+    part(rooster, new THREE.BoxGeometry(0.06, 0.012, 0.08), yellow, s * 0.05, 0.006, 0.02);
+  }
+  world.createCollider(RAPIER.ColliderDesc.cylinder(0.25, 0.2).setTranslation(rooster.position.x, Y + 0.25, rooster.position.z));
+  let peck = 3;
+  let time = 0;
 
   const hand = new THREE.Vector3();
   return {
     update(dt) {
+      time += dt;
+      // The rooster looks around, and pecks at the snow now and then.
+      peck -= dt;
+      if (peck < -0.5) peck = 2 + Math.random() * 4;
+      neck.rotation.x = peck < 0 ? 0.9 : 0;
+      neck.rotation.y = Math.sin(time * 0.9) * 0.6;
       for (const s of sippers) {
         s.next -= dt;
         if (s.next <= 0) {
