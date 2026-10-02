@@ -15,6 +15,10 @@ import { Quality } from './ui/quality';
 import { Snowmobile } from './vehicles/snowmobile';
 import { DogSled } from './vehicles/dogsled';
 import { createDogFarm } from './world/dogfarm';
+import { groundHeight } from './world/terrain';
+import { Npcs } from './npc/npcs';
+import { createWhiskeyPair } from './npc/whiskey';
+import { createIceFishing } from './activities/icefishing';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -74,7 +78,41 @@ async function start(): Promise<void> {
   const sled = new Snowmobile(scene, world, player, camp.spawn.x + 4, camp.spawn.z - 3, Math.PI);
   const farm = createDogFarm(scene, world, camp.dogFarm);
   const dogs = new DogSled(scene, world, player, farm.team.x, farm.team.z, farm.team.heading);
-  const providers = [sled, dogs, sauna, yurt, igloo];
+
+  // --- People around camp ---
+  const npcs = new Npcs(scene, world);
+  const onGround = (x: number, z: number) => new THREE.Vector3(x, groundHeight(x, z), z);
+  const sledPark = { x: camp.spawn.x + 4, z: camp.spawn.z - 3 };
+  const gyuri = onGround(sledPark.x + 1.8, sledPark.z + 0.9);
+  npcs.add({
+    name: 'Gyuri', line: 'Watch out for the trees, these snowmobiles can go out of control',
+    at: gyuri, heading: Math.atan2(camp.spawn.x - gyuri.x, camp.spawn.z - gyuri.z), solid: true,
+    look: { jacket: 0xd0702a, pants: 0x1f2328, hat: 0x1a1a1a, scarf: 0x6b6f78 },
+  });
+  const fr = camp.dogFarm.rot; // Thomasz stands beside the farm gate, by the team
+  const tx = camp.dogFarm.x + 2.8 * Math.cos(fr) - 2.6 * Math.sin(fr);
+  const tz = camp.dogFarm.z - 2.8 * Math.sin(fr) - 2.6 * Math.cos(fr);
+  npcs.add({
+    name: 'Thomasz', line: 'These dogs are very friendly and cute, hop on the dog sledge for a cool experience',
+    at: onGround(tx, tz), heading: fr + Math.PI, solid: true,
+    look: { jacket: 0x6b4a2b, hat: 0xb23a2a, scarf: 0x2e5fa8 },
+  });
+  const inSauna = (p: THREE.Vector3) => sauna.isInside(p);
+  const saunaLine = 'Put some more wood in the sauna stove.';
+  [
+    { name: 'Barbara', lx: -2.0, look: { towel: 0xf2c4cc, hat: null, hair: 0xd9b26f, bun: true, skin: 0xedc9ad } },
+    { name: 'Zsofia', lx: -1.1, look: { towel: 0xf4f1ea, hat: null, hair: 0x3e2a20, bun: true, skin: 0xe3bc9c } },
+  ].forEach((g) => {
+    const seat = sauna.upperSeat(g.lx);
+    npcs.add({ name: g.name, line: saunaLine, look: g.look, at: seat.root, heading: 0, pose: 'sit',
+      talkFrom: seat.front, talkRadius: 0.9, reachable: inSauna });
+  });
+  const whiskey = createWhiskeyPair(scene, npcs, camp.igloo);
+  const fishing = createIceFishing(scene, world, npcs, player,
+    new THREE.Vector3(sauna.centre.x + 9.5, 0, sauna.centre.z - 2.5));
+  const talk = { interaction: (p: THREE.Vector3) => npcs.interaction(p, !!player.locked) };
+
+  const providers = [sled, dogs, fishing, talk, sauna, yurt, igloo];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
@@ -156,7 +194,7 @@ async function start(): Promise<void> {
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
     prompt.status(
-      sled.status() ?? dogs.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
+      sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
     );
     igloo.update(player.position);
     fx.update(dt, heat);
@@ -170,6 +208,10 @@ async function start(): Promise<void> {
     darkness = palette.stars;
     tint.copy(palette.hemiSky).multiplyScalar(0.35 + palette.hemiIntensity * 0.35);
     camp.update(dt, palette, wind.gust);
+    camera.updateMatrixWorld();
+    npcs.update(dt, player.position, camera);
+    whiskey.update(dt);
+    fishing.update(dt, tint);
     farm.update(dt);
     sauna.update(dt, tint);
     yurt.update(dt, tint);

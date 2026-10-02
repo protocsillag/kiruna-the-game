@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import RAPIER, { type ColliderDesc, type World } from '@dimforge/rapier3d-compat';
 import { groundHeight } from '../world/terrain';
 import { MATS, mesh, timber } from '../world/materials';
-import { Smoke } from '../world/smoke';
+import { createCampfire } from '../world/campfire';
+import { furMaterials, pelt } from '../world/fur';
 import type { Player } from '../player/player';
 import type { Interaction } from './interaction';
 
@@ -16,40 +17,6 @@ const SEAT_ANGLES = [42, 90, 138, 222, 270, 318].map((d) => (d * Math.PI) / 180)
 
 /** Outward direction for an angle around the yurt; 0 = front (−Z, the door). */
 const dirAt = (a: number) => new THREE.Vector3(Math.sin(a), 0, -Math.cos(a));
-
-function furTexture(base: string, light: string, dark: string): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d')!;
-  g.fillStyle = base;
-  g.fillRect(0, 0, 128, 128);
-  let seed = base.length * 97;
-  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 1400; i++) {
-    g.strokeStyle = rand() < 0.5 ? light : dark;
-    g.globalAlpha = 0.35 + rand() * 0.4;
-    const x = rand() * 128;
-    const y = rand() * 128;
-    g.beginPath();
-    g.moveTo(x, y);
-    g.lineTo(x + (rand() - 0.5) * 3, y + 3 + rand() * 5);
-    g.stroke();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-/** A soft, lumpy reindeer pelt: a flattened, jittered icosphere. */
-function pelt(mat: THREE.Material, sx: number, sz: number): THREE.Mesh {
-  const geo = new THREE.IcosahedronGeometry(1, 2);
-  const p = geo.attributes.position as THREE.BufferAttribute;
-  for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) * (0.9 + Math.random() * 0.2), p.getY(i), p.getZ(i) * (0.9 + Math.random() * 0.2));
-  geo.computeVertexNormals();
-  const m = mesh(geo, mat);
-  m.scale.set(sx, 0.07, sz);
-  return m;
-}
 
 export interface Yurt {
   interior: THREE.Box3;
@@ -137,47 +104,11 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
     group.add(pole);
   }
 
-  // Campfire: stone ring, ash, crossed logs, flickering flames.
-  for (let i = 0; i < 12; i++) {
-    const d = dirAt((i / 12) * Math.PI * 2).multiplyScalar(0.7);
-    group.add(mesh(new THREE.DodecahedronGeometry(0.13), MATS.stone, d.x, 0.1, d.z));
-  }
-  const ash = mesh(new THREE.CircleGeometry(0.6, 16), new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 1 }), 0, 0.055, 0);
-  ash.rotation.x = -Math.PI / 2;
-  group.add(ash);
-  for (let i = 0; i < 4; i++) {
-    const log = mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.9, 6), MATS.log);
-    log.position.y = 0.3;
-    log.rotation.set(0.55, (i / 4) * Math.PI * 2, 0, 'YXZ');
-    group.add(log);
-  }
-  const flameMat = new THREE.MeshStandardMaterial({
-    color: 0xffa040, emissive: 0xff7a1a, emissiveIntensity: 3.5, transparent: true, opacity: 0.85, depthWrite: false,
-  });
-  const coreMat = new THREE.MeshStandardMaterial({
-    color: 0xffe08a, emissive: 0xffd060, emissiveIntensity: 4.5, transparent: true, opacity: 0.9, depthWrite: false,
-  });
-  const flames = [
-    { r: 0.26, h: 0.75, x: 0, z: 0, mat: flameMat },
-    { r: 0.18, h: 0.55, x: 0.12, z: 0.08, mat: flameMat },
-    { r: 0.17, h: 0.5, x: -0.1, z: -0.1, mat: flameMat },
-    { r: 0.12, h: 0.45, x: 0, z: 0, mat: coreMat },
-  ].map((f) => {
-    const m = new THREE.Mesh(new THREE.ConeGeometry(f.r, f.h, 7).translate(0, f.h / 2, 0), f.mat);
-    m.position.set(f.x, 0.12, f.z);
-    group.add(m);
-    return m;
-  });
-  collide(RAPIER.ColliderDesc.cylinder(0.3, 0.8), 0, 0.3, 0);
-  const fireLight = new THREE.PointLight(0xff9a4a, 10, 13, 2);
-  fireLight.position.set(0, 0.9, 0);
-  group.add(fireLight);
+  // Campfire in the middle (shared with the ice-fishing camp).
+  const fire = createCampfire(scene, world, new THREE.Vector3(x, base, z));
 
   // Log seats draped in reindeer fur, plus pelts on the floor.
-  const furs = [
-    new THREE.MeshStandardMaterial({ map: furTexture('#8a7563', '#b8a58e', '#4e4035'), roughness: 1 }),
-    new THREE.MeshStandardMaterial({ map: furTexture('#d6cbb8', '#f1ebe0', '#9c8f7c'), roughness: 1 }),
-  ];
+  const furs = furMaterials();
   const seats: { pos: THREE.Vector3; front: THREE.Vector3; heading: number }[] = [];
   SEAT_ANGLES.forEach((a, i) => {
     const d = dirAt(a).multiplyScalar(SEAT_R);
@@ -203,10 +134,6 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
     rug.scale.y = 0.04;
     group.add(rug);
   }
-  const fireTop = group.localToWorld(new THREE.Vector3(0, 1.0, 0));
-  const smoke = new Smoke(scene, fireTop, { count: 40, life: 6.5, rise: 0.7, spread: 0.4, size: [0.4, 2.2], opacity: 0.3 });
-  smoke.rate = 3;
-  const fireTint = new THREE.Color(0xffb27a);
 
   const interior = new THREE.Box3(
     new THREE.Vector3(x - R, base - 0.5, z - R),
@@ -215,7 +142,6 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
   const isInside = (p: THREE.Vector3) => Math.hypot(p.x - x, p.z - z) < R - 0.15 && Math.abs(p.y - base) < 2;
 
   let seated = -1;
-  let time = 0;
   const stand: Interaction = {
     label: 'stand up',
     run() {
@@ -249,15 +175,7 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
       };
     },
     update(dt, tint) {
-      time += dt;
-      flames.forEach((f, i) => {
-        const k = time * (9 + i * 2.3) + i * 1.7;
-        f.scale.set(1 + Math.sin(k * 0.7) * 0.08, 0.8 + Math.sin(k) * 0.15 + Math.sin(k * 2.3) * 0.08, 1 + Math.cos(k * 0.6) * 0.08);
-        f.rotation.y = time * (0.6 + i * 0.2);
-      });
-      fireLight.intensity = 9 + Math.sin(time * 11) * 1.4 + Math.sin(time * 23.7) * 0.8;
-      smoke.tint.copy(tint).lerp(fireTint, 0.25);
-      smoke.update(dt, 0.3, 0.1);
+      fire.update(dt, tint);
     },
   };
 }

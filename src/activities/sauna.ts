@@ -26,6 +26,9 @@ const targetTemp = (logs: number) => OUTSIDE_TEMP + PEAK * (1 - Math.exp(-0.55 *
 
 export interface Sauna {
   interior: THREE.Box3;
+  /** Sitting spot on the upper bench at local x (for NPCs), and where to stand to talk to them. */
+  upperSeat(lx: number): { root: THREE.Vector3; front: THREE.Vector3 };
+  centre: THREE.Vector3;
   readonly dipping: boolean;
   cameraIgnore: number[];
   isInside(p: THREE.Vector3): boolean;
@@ -170,6 +173,11 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
 
   return {
     interior,
+    centre: new THREE.Vector3(cx, floorY, cz),
+    upperSeat: (lx) => ({
+      root: new THREE.Vector3(cx + lx, floorY + 1.0 + 0.12 - 0.9, cz + upperZ),
+      front: new THREE.Vector3(cx + lx, floorY, cz + lowerZ + 0.75),
+    }),
     get dipping() {
       return hole.dipping;
     },
