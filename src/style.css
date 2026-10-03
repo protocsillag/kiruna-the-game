@@ -803,5 +803,9 @@ body.cinematic .touch-jog {
 }
 
 #exit-story {
-  margin: 0 auto 22px;
+  position: fixed;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
 }

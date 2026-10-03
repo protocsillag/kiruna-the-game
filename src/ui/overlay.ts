@@ -24,9 +24,9 @@ export function setupOverlay(
   const newStory = document.getElementById('new-story') as HTMLButtonElement;
   const exitStory = document.getElementById('exit-story') as HTMLButtonElement;
   exitStory.addEventListener('click', (e) => {
-    // Leave the story any time (progress is kept from the last finished chapter).
+    // Leave the story any time, back to the title (progress is kept from the last finished chapter).
     e.stopPropagation();
-    location.href = `${location.pathname}?free`;
+    location.href = location.pathname;
   });
   const verb = touch ? 'Tap' : 'Click';
   let chosen = false;
