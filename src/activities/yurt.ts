@@ -25,6 +25,8 @@ export interface Yurt {
   interaction(p: THREE.Vector3): Interaction | null;
   status(p: THREE.Vector3): string | null;
   update(dt: number, tint: THREE.Color): void;
+  /** Story mode: the seat at the back, facing the door, kept for someone (the player can't take it). */
+  reserveBackSeat(): { root: THREE.Vector3; front: THREE.Vector3; heading: number };
 }
 
 /** Round timber kåta/yurt with a campfire in the middle and reindeer-fur seats around it. */
@@ -142,6 +144,7 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
   const isInside = (p: THREE.Vector3) => Math.hypot(p.x - x, p.z - z) < R - 0.15 && Math.abs(p.y - base) < 2;
 
   let seated = -1;
+  let reserved = -1;
   const stand: Interaction = {
     label: 'stand up',
     run() {
@@ -161,6 +164,7 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
       let best = -1;
       let bestD = 1.3;
       seats.forEach((s, i) => {
+        if (i === reserved) return;
         const d = Math.hypot(p.x - s.front.x, p.z - s.front.z);
         if (d < bestD) [best, bestD] = [i, d];
       });
@@ -176,6 +180,11 @@ export function createYurt(scene: THREE.Scene, world: World, player: Player, x: 
     },
     update(dt, tint) {
       fire.update(dt, tint);
+    },
+    reserveBackSeat() {
+      reserved = SEAT_ANGLES.reduce((best, a, i) => (Math.cos(a) < Math.cos(SEAT_ANGLES[best]) ? i : best), 0);
+      const s = seats[reserved];
+      return { root: new THREE.Vector3(s.pos.x, base + SEAT_TOP + 0.12 - 0.9, s.pos.z), front: s.front, heading: s.heading };
     },
   };
 }

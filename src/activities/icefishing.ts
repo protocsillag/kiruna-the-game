@@ -4,7 +4,7 @@ import { ICE_Y } from '../world/terrain';
 import { MATS, mesh } from '../world/materials';
 import { createCampfire } from '../world/campfire';
 import { furMaterials, pelt } from '../world/fur';
-import type { Npcs } from '../npc/npcs';
+import type { Npc, Npcs } from '../npc/npcs';
 import type { Character } from '../player/character';
 import type { Player } from '../player/player';
 import type { Interaction } from './interaction';
@@ -55,13 +55,16 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
   });
   const facing = (s: THREE.Vector3) => Math.atan2(hole.x - s.x, hole.z - s.z);
   const seatRoot = (s: THREE.Vector3) => new THREE.Vector3(s.x, SEAT + 0.12 - 0.9, s.z);
+  const people: Npc[] = [];
   const fishers = [
     { name: 'Alex', line: LINE, look: { jacket: 0x2f6fa8, hat: 0xe0a83a, scarf: 0x3a3a3a } },
     { name: 'Boti', line: 'How much is the fish?', look: { jacket: 0x5a5f66, hat: 0x2d5a3a, scarf: 0xb8322a } },
   ].map((f, i) => {
     const s = spots[i];
     world.createCollider(RAPIER.ColliderDesc.cylinder(0.35, 0.4).setTranslation(s.x, ICE_Y + 0.35, s.z));
-    return npcs.add({ ...f, at: seatRoot(s), heading: facing(s), pose: 'sit', talkFrom: s, talkRadius: 1.9 }).character;
+    const npc = npcs.add({ ...f, at: seatRoot(s), heading: facing(s), pose: 'sit', talkFrom: s, talkRadius: 1.9 });
+    people.push(npc);
+    return npc.character;
   });
 
   // Rods: placed each frame from the hand toward the hole, with a line down into the water.
@@ -120,7 +123,14 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
     },
   };
 
-  return {
+  const api = {
+    /** Alex and Boti. */
+    people,
+    get fishing() {
+      return fishing;
+    },
+    /** Story mode: 0..1 how hard the player's line is twitching (a bite). */
+    twitch: 0,
     interaction(p: THREE.Vector3): Interaction | null {
       if (fishing) return leave;
       if (player.locked) return null;
@@ -132,11 +142,12 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
       fire.update(dt, tint);
       // A little jig now and then.
       fishers.forEach((c, i) => (c.armOverride[0] = -0.85 + Math.max(0, Math.sin(time * 2.4 + i * 2)) * 0.12));
-      if (fishing) player.character.armOverride[0] = -0.85 + Math.max(0, Math.sin(time * 2.1)) * 0.12;
+      if (fishing) player.character.armOverride[0] = -0.85 + Math.max(0, Math.sin(time * 2.1)) * 0.12 + api.twitch * Math.sin(time * 38) * 0.18;
       placeRod(0, fishers[0]);
       placeRod(1, fishers[1]);
       placeRod(2, fishing ? player.character : null);
       lineGeo.attributes.position.needsUpdate = true;
     },
   };
+  return api;
 }

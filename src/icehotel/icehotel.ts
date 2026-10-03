@@ -68,6 +68,8 @@ export interface IceHotel {
   bounds: THREE.Box3;
   /** Jimmy on his throne in the Ice Bar. */
   king: Npc;
+  /** Linnéa at reception (story mode has her locked out, waiting by the door). */
+  receptionist: Npc;
   /** The front doorway (centre on the floor, opening size), for story mode's lock. */
   door: { at: THREE.Vector3; w: number; h: number };
   interaction(p: THREE.Vector3): Interaction | null;
@@ -179,7 +181,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   const benchFur = pelt(furMaterials()[1], 0.45, 1.5);
   benchFur.position.set(X - 6.0, Y + 0.5, F - 6.2);
   scene.add(benchFur);
-  npcs.add({
+  const receptionist = npcs.add({
     name: 'Linnéa', at: new THREE.Vector3(X + 5.6, Y, F - 6.2), heading: -Math.PI / 2, solid: true,
     line: 'Welcome to the ICEHOTEL! Our art rooms are along the corridor, and the Ice Bar is at the very end. Everything here is made of ice from the river.',
     look: { jacket: 0x1d2a44, hat: 0xe9e4da, scarf: 0x9fc6e6 }, talkFrom: new THREE.Vector3(X + 3.4, Y, F - 6.2), talkRadius: 1.8,
@@ -299,6 +301,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   return {
     bounds,
     king: guests.king,
+    receptionist,
     door: { at: new THREE.Vector3(X, Y, F), w: 2.6, h: 3.2 },
     interaction(p) {
       if (player.locked || !inside(BAR, p)) return null;

@@ -592,3 +592,35 @@ body.touch #pockets small {
 .fx-white {
   background: radial-gradient(ellipse at center, rgba(215, 224, 238, 0.6) 0%, rgba(225, 232, 242, 1) 100%);
 }
+
+/* Story mode: the bite window while ice fishing for the key. */
+#bite {
+  position: fixed;
+  left: 50%;
+  bottom: 140px;
+  width: 180px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background: rgba(14, 20, 38, 0.5);
+  border: 1px solid rgba(255, 213, 154, 0.6);
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 3;
+}
+
+#bite.visible {
+  opacity: 1;
+}
+
+#bite i {
+  display: block;
+  height: 100%;
+  background: #ffd59a;
+}
+
+body.touch #bite {
+  bottom: calc(140px + env(safe-area-inset-bottom));
+}

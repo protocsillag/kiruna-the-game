@@ -92,11 +92,12 @@ const SCRIPT: Record<string, [string, Lines][]> = {
   ],
   Gyuri: [
     ['find-gyuri', (s) => [
+      { text: 'Ahh, nothing beats a fire in the kåta. Sit, warm up.' },
       { text: 'Looking for Yoppi? He took the trail across the lake this morning and has not come back.' },
       { text: 'You want my snowmobile? Hmm. Follow the poles with the red crosses, I put lights out along the trail.' },
       { text: 'Here are the keys. And be careful! Watch out for the trees, these snowmobiles can go out of control.', then: () => s.advance('find-gyuri') },
     ]],
-    ['snowmobile-run', say('The snowmobile is parked by the shore. Follow the lights. And the trees... you know.')],
+    ['snowmobile-run', say('The snowmobile is parked by the shore. I stay here by the fire.', 'Follow the lights. And the trees... you know.')],
     ['crash', say('My snowmobile! What did I say about the trees?', 'Talk to Yoppi. He is the one with the paperwork.')],
     ['harness', say('Do not worry about the snowmobile. That is what insurance is for.')],
   ],
@@ -119,6 +120,25 @@ const SCRIPT: Record<string, [string, Lines][]> = {
     ['heat-sauna', say('More wood! It has to be eighty degrees, not a degree less.')],
     ['sauna-done', sawHimLeave('Ahh. Now that is a sauna.')],
     ['find-gyuri', say('Go and find Yoppi. Gyuri knows which way he went.')],
+  ],
+  Linnéa: [
+    ['arrive', say('I am sorry, the ICEHOTEL is closed today. I cannot even get in myself.')],
+    ['linnea', (s) => [
+      { text: 'Oh, hello! I am Linnéa, I run the ICEHOTEL. And I am locked out of it.' },
+      { text: 'The King? Yes, he rehearses here every night. He had the spare key, and my own key is inside. Of course.' },
+      { text: 'He crossed the ice the night he went missing. If he dropped the key, it is at the bottom of the lake.' },
+      { text: 'If only someone here knew how to fish...', then: () => s.advance('linnea') },
+    ]],
+    ['fish-key', say('Your friends fish by the sauna, I hear. Not that they ever catch anything.')],
+    ['open-door', say('You found it! I would know that blue ribbon anywhere. Go on, open the door.')],
+  ],
+  Alex: [
+    ['fish-key', say('A key in the lake? Take the free fur. When the line twitches, reel in. Fast!')],
+    ['open-door', say('Twenty years of fishing and the first thing we catch is a key.')],
+  ],
+  Boti: [
+    ['fish-key', say('How much is the fish? Today: one key, apparently.')],
+    ['open-door', say('How much is the key? Priceless.')],
   ],
   Zsofia: [
     ['arrive', say('Is the aurora visible outside?', 'No? It has not shown for days. Strange, in January.')],

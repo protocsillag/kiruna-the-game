@@ -10,8 +10,10 @@ import { Carry } from './carry';
 import { createIglooBuild } from './igloobuild';
 import { createSaunaHeat } from './saunaheat';
 import { createSnowRun } from './snowrun';
-import { createLakeAct } from './lakeact';
+import { createLakeAct, type Spot } from './lakeact';
 import type { Snowmobile } from '../vehicles/snowmobile';
+import { createFishKey } from './fishkey';
+import { createKeyAct } from './keyact';
 import type { IceHotel } from '../icehotel/icehotel';
 import type { Sky } from '../sky/sky';
 import type { Hud } from '../ui/hud';
@@ -40,9 +42,11 @@ interface Parts {
   player: Player;
   woodpile: THREE.Vector3;
   sled: Snowmobile;
-  /** Gyuri stays out of sight until his chapter, then waits by the lodge woodpile. */
+  fishing: Parameters<typeof createFishKey>[1];
+  touch: boolean;
+  /** Gyuri stays out of sight until his chapter, then chills in the yurt. */
   gyuri: Npc;
-  gyuriSpot: { at: THREE.Vector3; heading: number };
+  gyuriSpot: () => Spot;
   /** Screen shake etc. when the snowmobile hits the spruce. */
   onCrash: () => void;
   targets: Record<TargetId, THREE.Vector3>;
@@ -59,7 +63,9 @@ export function createStoryWorld(parts: Parts) {
   const carry = new Carry(scene, parts.player);
   const iglooBuild = createIglooBuild(scene, world, story, parts.igloo, parts.iglooRot, carry, parts.player);
   const saunaHeat = createSaunaHeat(story, parts.sauna, carry, parts.woodpile);
-  const activities = [iglooBuild, saunaHeat];
+  const fishKey = createFishKey(story, parts.fishing, npcs, parts.touch);
+  const keyAct = createKeyAct(story, npcs, hotel);
+  const activities = [fishKey, iglooBuild, saunaHeat];
   const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, parts.gyuriSpot, targets.spruce);
   const snowRun = createSnowRun(scene, story, parts.sled, sky, targets.spruce, (at) => {
     lakeAct.crashed(at);
@@ -105,6 +111,7 @@ export function createStoryWorld(parts: Parts) {
     door = null;
   };
   const doorPrompt: Interaction = { label: 'the door is locked', run: () => {} };
+  const unlockPrompt: Interaction = { label: 'unlock the door with the key', run: () => story.advance('open-door') };
 
   const refresh = () => {
     const step = story.current;
@@ -151,7 +158,8 @@ export function createStoryWorld(parts: Parts) {
       interaction(p: THREE.Vector3): Interaction | null {
         if (!door) return null;
         const { at } = hotel.door;
-        return Math.hypot(p.x - at.x, p.z - (at.z + 1.2)) < 2.2 ? doorPrompt : null;
+        if (Math.hypot(p.x - at.x, p.z - (at.z + 1.2)) > 2.2) return null;
+        return story.at('open-door') && story.items.has('key') ? unlockPrompt : doorPrompt;
       },
     },
     /** Called once when the player picks Story on the title card. */
@@ -166,6 +174,7 @@ export function createStoryWorld(parts: Parts) {
       iglooBuild.begin();
       saunaHeat.begin();
       lakeAct.begin();
+      keyAct.begin();
       npcs.setHidden(hotel.king, true); // the throne starts empty
       if (!story.reached('rooms')) lockDoor();
       refresh();
@@ -178,6 +187,8 @@ export function createStoryWorld(parts: Parts) {
       iglooBuild.update(dt);
       saunaHeat.update(dt);
       snowRun.update(dt);
+      fishKey.update(dt);
+      keyAct.update();
       lakeAct.update(player);
       const run = snowRun.target();
       if (run) beacon.point(run);

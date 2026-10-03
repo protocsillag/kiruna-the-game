@@ -137,16 +137,26 @@ export class Npcs {
     this.render();
   }
 
+  /** Have someone say these lines right now (e.g. a remark when something happens). */
+  tell(npc: Npc, lines: Line[]): void {
+    this.convo = { npc, lines, i: 0, pick: 0 };
+    this.show();
+  }
+
   say(npc: Npc): void {
     const lines = this.script?.(npc.name) ?? [{ text: npc.line }];
     this.convo = { npc, lines, i: 0, pick: 0 };
     this.show();
   }
 
-  /** Story mode moves people around (e.g. Gyuri away from the snowmobile). */
-  move(npc: Npc, at: THREE.Vector3, heading: number): void {
+  /** Story mode moves people around (e.g. Gyuri away from the snowmobile). Pose/talk spot reset unless given. */
+  move(npc: Npc, at: THREE.Vector3, heading: number, opts: Pick<NpcDef, 'pose' | 'talkFrom' | 'talkRadius' | 'reachable'> = {}): void {
     npc.at = at.clone();
     npc.heading = heading;
+    npc.pose = opts.pose;
+    npc.talkFrom = opts.talkFrom;
+    npc.talkRadius = opts.talkRadius;
+    npc.reachable = opts.reachable;
     npc.character.root.position.copy(at);
     npc.character.root.rotation.y = heading;
     npc.collider?.setTranslation({ x: at.x, y: at.y + 0.87, z: at.z });

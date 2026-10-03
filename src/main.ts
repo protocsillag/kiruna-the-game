@@ -128,24 +128,23 @@ async function start(): Promise<void> {
   const sz = gc.z - 1.0 * Math.sin(gc.rot) + 5.2 * Math.cos(gc.rot);
   createIceHotelSign(scene, world, onGround(sx, sz), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
 
-  // Story mode moves Gyuri from the snowmobile to the lodge woodpile, facing the lake.
-  const wp = camp.woodpile;
-  const storyGyuri = {
-    at: onGround(wp.x - 2.4 * Math.sin(wp.rot), wp.z - 2.4 * Math.cos(wp.rot)),
-    heading: wp.rot + Math.PI,
+  // Story mode moves Gyuri from the snowmobile to a seat by the fire in the yurt.
+  const storyGyuri = () => {
+    const s = yurt.reserveBackSeat();
+    return { at: s.root, heading: s.heading, opts: { pose: 'sit' as const, talkFrom: s.front, talkRadius: 1.1, reachable: (p: THREE.Vector3) => yurt.isInside(p) } };
   };
   // Story mode: a layer over the same world. In free roam the gates and extras are pass-throughs.
   const story = new Story();
   const storyWorld = createStoryWorld({
     scene, world, story, sky, hud, npcs, hotel, igloo, sauna, player, sled, gyuri: gyuriNpc,
-    gyuriSpot: storyGyuri,
+    gyuriSpot: storyGyuri, fishing, touch,
     onCrash: () => fx.triggerShiver(),
     iglooRot: camp.igloo.rot,
     woodpile: new THREE.Vector3(camp.woodpile.x, 0, camp.woodpile.z),
     targets: {
       igloo: new THREE.Vector3(camp.igloo.x, 0, camp.igloo.z),
       sauna: sauna.centre,
-      gyuri: storyGyuri.at,
+      gyuri: new THREE.Vector3(camp.yurt.x, 0, camp.yurt.z),
       spruce: new THREE.Vector3(72, 0, -96),
       farm: new THREE.Vector3(camp.dogFarm.x, 0, camp.dogFarm.z),
       hotel: new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front + 3),
