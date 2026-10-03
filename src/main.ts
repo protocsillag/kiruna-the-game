@@ -128,16 +128,24 @@ async function start(): Promise<void> {
   const sz = gc.z - 1.0 * Math.sin(gc.rot) + 5.2 * Math.cos(gc.rot);
   createIceHotelSign(scene, world, onGround(sx, sz), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
 
+  // Story mode moves Gyuri from the snowmobile to the lodge woodpile, facing the lake.
+  const wp = camp.woodpile;
+  const storyGyuri = {
+    at: onGround(wp.x - 2.4 * Math.sin(wp.rot), wp.z - 2.4 * Math.cos(wp.rot)),
+    heading: wp.rot + Math.PI,
+  };
   // Story mode: a layer over the same world. In free roam the gates and extras are pass-throughs.
   const story = new Story();
   const storyWorld = createStoryWorld({
-    scene, world, story, sky, hud, npcs, hotel, igloo, sauna, player, gyuri: gyuriNpc,
+    scene, world, story, sky, hud, npcs, hotel, igloo, sauna, player, sled, gyuri: gyuriNpc,
+    gyuriSpot: storyGyuri,
+    onCrash: () => fx.triggerShiver(),
     iglooRot: camp.igloo.rot,
     woodpile: new THREE.Vector3(camp.woodpile.x, 0, camp.woodpile.z),
     targets: {
       igloo: new THREE.Vector3(camp.igloo.x, 0, camp.igloo.z),
       sauna: sauna.centre,
-      gyuri,
+      gyuri: storyGyuri.at,
       spruce: new THREE.Vector3(72, 0, -96),
       farm: new THREE.Vector3(camp.dogFarm.x, 0, camp.dogFarm.z),
       hotel: new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front + 3),
@@ -150,12 +158,12 @@ async function start(): Promise<void> {
   const providers = [
     { interaction: (p: THREE.Vector3) => npcs.continuation(p) },
     storyWorld.activities,
-    gate(sled, 'snowmobile-run', 'the snowmobile has no key'),
-    gate(dogs, 'harness', 'the farm gate is shut'),
+    gate(sled, () => story.at('snowmobile-run'), () => (story.reached('crash') ? 'the snowmobile is wrecked' : 'the snowmobile has no key')),
+    gate(dogs, () => story.reached('ride')), // no locked prompt: it would cover talking to Thomasz beside the team
     fishing, hotel, storyWorld.door, talk,
-    gate(sauna, 'heat-sauna', 'the sauna is cold'),
+    gate(sauna, () => story.reached('heat-sauna'), () => 'the sauna is cold'),
     yurt,
-    gate(igloo, null, null), // no King's song in story mode
+    gate(igloo, () => false), // no King's song in story mode
   ];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);

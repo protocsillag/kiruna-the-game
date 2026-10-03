@@ -588,3 +588,7 @@ body.touch #pockets small {
   margin: 0;
   line-height: 1.35;
 }
+
+.fx-white {
+  background: radial-gradient(ellipse at center, rgba(215, 224, 238, 0.6) 0%, rgba(225, 232, 242, 1) 100%);
+}

@@ -17,6 +17,42 @@ const sawHimLeave = (first: string): Lines => (s) => [
   { text: 'Ask the camp leader where he rehearsed. Yoppi knows everybody.', then: () => s.advance('sauna-done') },
 ];
 
+/** Chapter 4: the insurance talk at the wreck. Every answer ends the same way. */
+const insuranceTalk: Lines = (s) => [
+  { text: 'Well, well. One Camp Alta snowmobile. One lone spruce. I am Yoppi, the camp leader.' },
+  { text: 'Let me read the small print. Section 4b: "Trees are not considered unexpected." How do you explain this?', choices: [
+    { text: 'The tree came out of nowhere.', reply: 'It has been standing there for eighty years.' },
+    { text: 'It was a whiteout!', reply: 'Section 4c: "Weather is also not unexpected. This is Lapland."' },
+    { text: 'Is the tree insured?', reply: 'The tree is fine. The tree is always fine.' },
+  ] },
+  { text: 'Damage: one ski, one windscreen, one very offended spruce. That makes fourteen thousand kronor. How will you pay?', choices: [
+    { text: 'I will pay in whiskey.', reply: 'That is a lot of whiskey. Smoky? No. Next option.' },
+    { text: 'Can I pay in songs?', reply: 'Only one man here ever paid in songs.' },
+    { text: 'Put it on Richard\'s tab.', reply: 'Richard\'s tab is already longer than the trail.' },
+  ] },
+  { who: 'Gyuri', text: 'Relax, Yoppi. It is on my insurance. I told them to watch out for the trees.' },
+  { text: 'Hmm. Fine. Gyuri\'s insurance covers the damage.' },
+  { text: 'You want to know about the King? I welcomed him to camp myself. He rehearses in the ICEHOTEL, across the lake.' },
+  { text: 'You cannot walk that far. Take the dog sled. Tell Thomasz I said so.', then: () => s.advance('crash') },
+];
+
+/** Chapter 4: put each pair of huskies in the right place. A wrong answer ends it; just ask again. */
+const harnessQuiz: Lines = (s) => [
+  { text: 'Yoppi sent you? Then we harness the team. Six dogs, three pairs.' },
+  { text: 'Luna and Sixten are the clever ones. Pippi and Molly are young and keen. Bamse and Tor are big and strong.' },
+  { text: 'Who runs up front and leads?', choices: [
+    { text: 'Luna and Sixten', reply: 'Yes! Leaders need brains, not muscles.' },
+    { text: 'Bamse and Tor', reply: 'They would pull us straight into the forest. Leaders need brains. Talk to me again.', stop: true },
+    { text: 'Pippi and Molly', reply: 'Too young, they would chase every hare. Talk to me again.', stop: true },
+  ] },
+  { text: 'And who goes at the back, right in front of the sled?', choices: [
+    { text: 'Bamse and Tor', reply: 'Exactly. The strong ones take the weight of the sled.', then: () => s.advance('harness') },
+    { text: 'Pippi and Molly', reply: 'They would get squashed. The back needs strength. Talk to me again.', stop: true },
+    { text: 'Luna and Sixten', reply: 'They are already leading. Talk to me again.', stop: true },
+  ] },
+  { text: 'Pippi and Molly in the middle, then. The team is ready. Hop on the sled!' },
+];
+
 /**
  * Story-mode lines per person: [first step, lines] entries, and the last entry the story has
  * reached wins. People without an entry keep their free-roam line.
@@ -55,10 +91,24 @@ const SCRIPT: Record<string, [string, Lines][]> = {
     ['sauna-ask', say('Have you seen my flask? Hm. Never mind, the bottle is bigger anyway.')],
   ],
   Gyuri: [
-    ['find-gyuri', say('Yoppi? He went out across the lake. Watch out for the trees if you follow him.')],
+    ['find-gyuri', (s) => [
+      { text: 'Looking for Yoppi? He took the trail across the lake this morning and has not come back.' },
+      { text: 'You want my snowmobile? Hmm. Follow the poles with the red crosses, I put lights out along the trail.' },
+      { text: 'Here are the keys. And be careful! Watch out for the trees, these snowmobiles can go out of control.', then: () => s.advance('find-gyuri') },
+    ]],
+    ['snowmobile-run', say('The snowmobile is parked by the shore. Follow the lights. And the trees... you know.')],
+    ['crash', say('My snowmobile! What did I say about the trees?', 'Talk to Yoppi. He is the one with the paperwork.')],
+    ['harness', say('Do not worry about the snowmobile. That is what insurance is for.')],
+  ],
+  Yoppi: [
+    ['crash', insuranceTalk],
+    ['harness', say('Thomasz will sort out the dogs. Tell him I sent you.', 'And find the King. The ICEHOTEL, across the lake.')],
+    ['ride', say('The dogs know the way. Mush!')],
   ],
   Thomasz: [
     ['arrive', say('The dogs are resting today.', 'The gate stays shut until the camp leader says otherwise. Nobody has seen Yoppi since this morning.')],
+    ['harness', harnessQuiz],
+    ['ride', say('Lead dogs know the way. Brake when you want them to stop, steer to turn.', 'The ICEHOTEL is straight across the lake. Follow the poles.')],
   ],
   Barbara: [
     ['arrive', say('Brr. Nobody has put wood in the stove all day.', 'Some sauna this is.')],

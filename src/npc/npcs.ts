@@ -34,10 +34,14 @@ export interface Choice {
   text: string;
   reply?: string;
   then?: () => void;
+  /** End the conversation after the reply (e.g. a wrong answer: talk again to retry). */
+  stop?: boolean;
 }
 
 export interface Line {
   text: string;
+  /** Someone else nearby chips in (shown with their name, from the same bubble). */
+  who?: string;
   choices?: Choice[];
   /** Runs when this line is said (e.g. hand over an item, move the story on). */
   then?: () => void;
@@ -139,6 +143,15 @@ export class Npcs {
     this.show();
   }
 
+  /** Story mode moves people around (e.g. Gyuri away from the snowmobile). */
+  move(npc: Npc, at: THREE.Vector3, heading: number): void {
+    npc.at = at.clone();
+    npc.heading = heading;
+    npc.character.root.position.copy(at);
+    npc.character.root.rotation.y = heading;
+    npc.collider?.setTranslation({ x: at.x, y: at.y + 0.87, z: at.z });
+  }
+
   setHidden(npc: Npc, hidden: boolean): void {
     npc.hidden = hidden;
     npc.character.root.visible = !hidden;
@@ -150,6 +163,7 @@ export class Npcs {
     const c = this.convo!;
     const choice = c.lines[c.i].choices?.[c.pick];
     if (choice) {
+      if (choice.stop) c.lines.length = c.i + 1;
       choice.then?.();
       if (choice.reply) c.lines.splice(c.i + 1, 0, { text: choice.reply });
     }
@@ -175,7 +189,7 @@ export class Npcs {
     const line = c.lines[c.i];
     this.bubble.innerHTML = '';
     const who = document.createElement('b');
-    who.textContent = c.npc.name;
+    who.textContent = line.who ?? c.npc.name;
     this.bubble.append(who, document.createTextNode(line.text));
     if (line.choices) {
       const list = document.createElement('ol');

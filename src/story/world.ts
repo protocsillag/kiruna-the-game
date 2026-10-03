@@ -9,6 +9,9 @@ import { Pockets } from '../ui/pockets';
 import { Carry } from './carry';
 import { createIglooBuild } from './igloobuild';
 import { createSaunaHeat } from './saunaheat';
+import { createSnowRun } from './snowrun';
+import { createLakeAct } from './lakeact';
+import type { Snowmobile } from '../vehicles/snowmobile';
 import type { IceHotel } from '../icehotel/icehotel';
 import type { Sky } from '../sky/sky';
 import type { Hud } from '../ui/hud';
@@ -36,8 +39,12 @@ interface Parts {
   sauna: Sauna;
   player: Player;
   woodpile: THREE.Vector3;
-  /** Gyuri stays out of sight until his chapter. */
+  sled: Snowmobile;
+  /** Gyuri stays out of sight until his chapter, then waits by the lodge woodpile. */
   gyuri: Npc;
+  gyuriSpot: { at: THREE.Vector3; heading: number };
+  /** Screen shake etc. when the snowmobile hits the spruce. */
+  onCrash: () => void;
   targets: Record<TargetId, THREE.Vector3>;
 }
 
@@ -53,16 +60,21 @@ export function createStoryWorld(parts: Parts) {
   const iglooBuild = createIglooBuild(scene, world, story, parts.igloo, parts.iglooRot, carry, parts.player);
   const saunaHeat = createSaunaHeat(story, parts.sauna, carry, parts.woodpile);
   const activities = [iglooBuild, saunaHeat];
+  const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, parts.gyuriSpot, targets.spruce);
+  const snowRun = createSnowRun(scene, story, parts.sled, sky, targets.spruce, (at) => {
+    lakeAct.crashed(at);
+    parts.onCrash();
+  });
 
   /**
-   * Wrap an interaction provider: until the story reaches `step`, the prompt it would show
-   * becomes `closed` (or nothing) and E does nothing. Always open in free roam.
+   * Wrap an interaction provider: while `open()` is false in story mode, the prompt it would show
+   * becomes `closed()` (or nothing) and E does nothing. Always open in free roam.
    */
-  const gate = (p: Provider, step: string | null, closed: string | null): Provider => ({
+  const gate = (p: Provider, open: () => boolean, closed: () => string | null = () => null): Provider => ({
     interaction(pos) {
-      if (step && story.reached(step)) return p.interaction(pos);
-      if (!story.active) return p.interaction(pos);
-      return closed && p.interaction(pos) ? { label: closed, run: () => {} } : null;
+      if (!story.active || open()) return p.interaction(pos);
+      const label = closed();
+      return label && p.interaction(pos) ? { label, run: () => {} } : null;
     },
   });
 
@@ -100,6 +112,7 @@ export function createStoryWorld(parts: Parts) {
     beacon.point(step?.target ? targets[step.target] : null);
     pockets.show(story.items);
     npcs.setHidden(parts.gyuri, !story.reached('find-gyuri'));
+    lakeAct.refresh();
   };
   story.onChange((chapterChanged) => {
     carry.drop();
@@ -125,6 +138,8 @@ export function createStoryWorld(parts: Parts) {
     },
     status(p: THREE.Vector3): string | null {
       if (!story.active) return null;
+      const run = snowRun.status();
+      if (run) return run;
       for (const a of activities) {
         const text = a.status(p);
         if (text) return text;
@@ -150,6 +165,7 @@ export function createStoryWorld(parts: Parts) {
       });
       iglooBuild.begin();
       saunaHeat.begin();
+      lakeAct.begin();
       npcs.setHidden(hotel.king, true); // the throne starts empty
       if (!story.reached('rooms')) lockDoor();
       refresh();
@@ -161,6 +177,10 @@ export function createStoryWorld(parts: Parts) {
       beacon.update(dt, player);
       iglooBuild.update(dt);
       saunaHeat.update(dt);
+      snowRun.update(dt);
+      lakeAct.update(player);
+      const run = snowRun.target();
+      if (run) beacon.point(run);
       carry.update();
       pockets.show(story.items);
     },

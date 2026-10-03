@@ -11,12 +11,15 @@ const START_HOUR = 12.5; // midday glow first, then blue hour and the first auro
 const SUN_COLOR = new THREE.Color(0xffb68c);
 const MOON_COLOR = new THREE.Color(0x9db4ff);
 const AURORA_TINT = new THREE.Color(0x3cff8a);
+const WHITEOUT = new THREE.Color(0x9aa6bc);
 const MIN_LIGHT_ELEV = Math.sin((6 * Math.PI) / 180); // keep shadows from going infinitely long
 
 export interface Sky {
   clock: DayClock;
   /** Story mode switches the northern lights off until the finale. */
   aurora: boolean;
+  /** Story mode's snowmobile run: 0..1 white-out fog. */
+  whiteout: number;
   hideSnowIn(box: THREE.Box3, slot: number): void;
   setQuality(high: boolean, pixelRatio: number): void;
   update(dt: number, camera: THREE.Vector3, focus: THREE.Vector3, gust: number): Palette;
@@ -56,6 +59,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
   return {
     clock,
     aurora: true,
+    whiteout: 0,
     hideSnowIn: (box, slot) => snow.hideIn(box, slot),
     setQuality(high, pixelRatio) {
       key.castShadow = high;
@@ -91,6 +95,12 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
       fog.color.copy(p.fog);
       fog.near = p.fogNear;
       fog.far = p.fogFar;
+      if (this.whiteout > 0) {
+        const w = this.whiteout;
+        fog.color.lerp(WHITEOUT, w * 0.85);
+        fog.near *= 1 - w * 0.95;
+        fog.far = THREE.MathUtils.lerp(fog.far, 32, w);
+      }
       renderer.toneMappingExposure = p.exposure;
 
       snowColor.copy(hemi.color).multiplyScalar(0.35 + p.hemiIntensity * 0.35);

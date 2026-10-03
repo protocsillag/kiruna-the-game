@@ -5,23 +5,31 @@ import { MATS, mesh } from './materials';
 const SPACING = 28;
 const RED = new THREE.MeshStandardMaterial({ color: 0xc4202a, roughness: 0.6 });
 
+const startX = 6;
+const start = new THREE.Vector2(startX, shoreZ(startX) - 6);
+const end = new THREE.Vector2(ICEHOTEL.x + 6, farShoreZ(ICEHOTEL.x + 6) + 6); // just off the Ice Hotel's shore
+const dir = end.clone().sub(start).normalize();
+const side = new THREE.Vector2(-dir.y, dir.x);
+/** Direction the trail runs (camp → Ice Hotel), as a heading. */
+export const TRAIL_HEADING = Math.atan2(dir.x, dir.y);
+
+/** Point on the trail at t (0 = camp shore, 1 = off the Ice Hotel's shore); x/y are world x/z. */
+export function trailPoint(t: number): THREE.Vector2 {
+  return start.clone().lerp(end, t).addScaledVector(side, Math.sin(t * Math.PI * 1.5) * 25);
+}
+
 /** Winter-trail poles with red crosses, leading from camp across the lake. */
 export function createTrail(scene: THREE.Scene): void {
-  const startX = 6;
-  const start = new THREE.Vector2(startX, shoreZ(startX) - 6);
-  const end = new THREE.Vector2(ICEHOTEL.x + 6, farShoreZ(ICEHOTEL.x + 6) + 6); // just off the Ice Hotel's shore
   const length = start.distanceTo(end);
   const n = Math.floor(length / SPACING);
-  const dir = end.clone().sub(start).normalize();
-  const side = new THREE.Vector2(-dir.y, dir.x);
-  const heading = Math.atan2(dir.x, dir.y);
+  const heading = TRAIL_HEADING;
 
   const pole = new THREE.CylinderGeometry(0.035, 0.045, 1.9, 6).translate(0, 0.95, 0);
   const arm = new THREE.BoxGeometry(0.06, 0.55, 0.03);
 
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const p = start.clone().lerp(end, t).addScaledVector(side, Math.sin(t * Math.PI * 1.5) * 25);
+    const p = trailPoint(t);
     const y = groundHeight(p.x, p.y);
     const g = new THREE.Group();
     g.position.set(p.x, y, p.y);

@@ -28,6 +28,8 @@ const GRAVITY = 18;
 export class Snowmobile {
   readonly collider: Collider;
   riding = false;
+  /** Story mode: on its side by the lone spruce, out of use. */
+  wrecked = false;
   heading: number;
   speed = 0;
 
@@ -154,6 +156,7 @@ export class Snowmobile {
     const goal = new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, 0, -roll + lean, 'YXZ'));
     this.tilt.slerp(goal, damp(10, dt || 1));
     this.model.body.quaternion.copy(this.tilt);
+    if (this.wrecked) this.model.body.quaternion.setFromEuler(new THREE.Euler(0.12, 0, 1.15));
     root.updateMatrixWorld(true);
 
     if (this.riding) {
@@ -175,6 +178,24 @@ export class Snowmobile {
     this.model.headlight.intensity = lit;
     this.model.lens.emissiveIntensity = this.riding ? 1.5 + darkness * 2 : 0.3;
     this.engine.update(dt, this.riding, this.throttle, this.speed);
+  }
+
+  /** Story mode's forced crash: stop dead, throw the rider off, lie on its side. */
+  crash(): void {
+    this.speed = 0;
+    this.throttle = 0;
+    this.velocity.set(0, 0, 0);
+    if (this.riding) this.dismount();
+    this.wrecked = true;
+  }
+
+  /** Move the parked sled (story mode puts the wreck back by the spruce after a reload). */
+  placeAt(x: number, z: number, heading: number): void {
+    this.heading = heading;
+    const t = { x, y: groundHeight(x, z) + RIDE + 0.05, z };
+    this.body.setTranslation(t, true);
+    this.body.setNextKinematicTranslation(t);
+    this.body.setNextKinematicRotation(this.yaw());
   }
 
   private dismount(): void {
