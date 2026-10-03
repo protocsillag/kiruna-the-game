@@ -18,6 +18,8 @@ export interface Sky {
   clock: DayClock;
   /** Story mode switches the northern lights off until the finale. */
   aurora: boolean;
+  /** Story finale: 0..1+ extra aurora (a low curtain plus brighter ribbons). */
+  auroraBoost: number;
   /** Story mode's snowmobile run: 0..1 white-out fog. */
   whiteout: number;
   hideSnowIn(box: THREE.Box3, slot: number): void;
@@ -60,6 +62,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
     clock,
     aurora: true,
     whiteout: 0,
+    auroraBoost: 0,
     hideSnowIn: (box, slot) => snow.hideIn(box, slot),
     setQuality(high, pixelRatio) {
       key.castShadow = high;
@@ -77,7 +80,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
       const auroraStrength = this.aurora ? p.aurora * (0.7 + 0.3 * Math.sin(time * 0.021)) : 0;
       dome.update(camera, p, sunDir, time);
       stars.update(camera, p.stars, time);
-      aurora.update(camera, auroraStrength, time);
+      aurora.update(camera, auroraStrength, time, this.auroraBoost);
 
       hemi.color.copy(p.hemiSky).lerp(AURORA_TINT, auroraStrength * 0.12);
       hemi.groundColor.copy(p.hemiGround);

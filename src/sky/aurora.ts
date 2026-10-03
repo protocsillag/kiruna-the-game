@@ -5,7 +5,10 @@ const RIBBONS = [
   { angle: 0.15, offset: 120, half: 650, curve: 120, base: 230, height: 170, seed: 1.3 },
   { angle: -0.25, offset: 480, half: 750, curve: 200, base: 260, height: 220, seed: 4.1 },
   { angle: 0.4, offset: -420, half: 600, curve: 160, base: 200, height: 150, seed: 7.7 },
+  // Story finale only (scaled by `boost`, so invisible in free roam): a low, wide curtain.
+  { angle: 0.05, offset: 260, half: 800, curve: 90, base: 60, height: 230, seed: 2.6 },
 ];
+const FINALE_RIBBON = 3;
 
 const vertex = /* glsl */ `
 uniform vec4 uLine;   // angle, offset, half length, curve
@@ -54,7 +57,7 @@ void main() {
 
 export interface Aurora {
   group: THREE.Group;
-  update(camera: THREE.Vector3, strength: number, time: number): void;
+  update(camera: THREE.Vector3, strength: number, time: number, boost?: number): void;
 }
 
 export function createAurora(): Aurora {
@@ -85,13 +88,14 @@ export function createAurora(): Aurora {
 
   return {
     group,
-    update(camera, strength, time) {
+    update(camera, strength, time, boost = 0) {
       group.position.set(camera.x, 0, camera.z);
       group.visible = strength > 0.01;
       materials.forEach((m, i) => {
         m.uniforms.uTime.value = time;
         // Each curtain breathes on its own slow rhythm.
-        m.uniforms.uAlpha.value = strength * (0.65 + 0.35 * Math.sin(time * 0.05 + i * 2.1));
+        const k = i === FINALE_RIBBON ? boost : 1 + boost;
+        m.uniforms.uAlpha.value = strength * k * (0.65 + 0.35 * Math.sin(time * 0.05 + i * 2.1));
       });
     },
   };

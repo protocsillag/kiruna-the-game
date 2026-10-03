@@ -16,6 +16,8 @@ export class OrbitCamera {
   private clear = 6;
   /** Random jitter in metres (cold-dip shiver). */
   shake = 0;
+  /** Story mode's crypt lies under the ground: keep the camera above this floor instead. */
+  floor: number | null = null;
   private idle = 0;
   private target = new THREE.Vector3();
   private initialised = false;
@@ -64,7 +66,7 @@ export class OrbitCamera {
     this.clear = allowed < this.clear ? allowed : this.clear + (allowed - this.clear) * damp(4, dt);
     const pos = dir.multiplyScalar(Math.min(this.distance, this.clear)).add(this.target);
     if (this.shake > 0) pos.add(new THREE.Vector3().randomDirection().multiplyScalar(this.shake));
-    pos.y = Math.max(pos.y, groundHeight(pos.x, pos.z) + 0.4);
+    pos.y = Math.max(pos.y, (this.floor ?? groundHeight(pos.x, pos.z)) + 0.4);
 
     this.camera.position.copy(pos);
     this.camera.lookAt(this.target);

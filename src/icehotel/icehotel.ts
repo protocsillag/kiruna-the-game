@@ -70,6 +70,8 @@ export interface IceHotel {
   king: Npc;
   /** Linnéa at reception (story mode has her locked out, waiting by the door). */
   receptionist: Npc;
+  /** Each art room's group (room-local: door at z = −4, far wall at +4), in ROOMS order. */
+  rooms: THREE.Group[];
   /** The front doorway (centre on the floor, opening size), for story mode's lock. */
   door: { at: THREE.Vector3; w: number; h: number };
   interaction(p: THREE.Vector3): Interaction | null;
@@ -81,6 +83,7 @@ export interface IceHotel {
 export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, player: Player): IceHotel {
   const blocks = iceBlockMaterial();
   const roomRects: (Rect & { name: string })[] = [];
+  const roomGroups: THREE.Group[] = [];
 
   // --- Halls ---
   createHall(scene, world, Y, {
@@ -117,6 +120,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     g.rotation.y = slot.side < 0 ? -Math.PI / 2 : Math.PI / 2; // local +Z points from the door into the room
     scene.add(g);
     room.build(g);
+    roomGroups.push(g);
     solidify(world, g, Y);
     // Room name on an ice plaque above the corridor doorway.
     const plaque = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.45), textMaterial(room.name.toUpperCase(), '#d9f1ff', { glowing: true }));
@@ -302,6 +306,7 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
     bounds,
     king: guests.king,
     receptionist,
+    rooms: roomGroups,
     door: { at: new THREE.Vector3(X, Y, F), w: 2.6, h: 3.2 },
     interaction(p) {
       if (player.locked || !inside(BAR, p)) return null;

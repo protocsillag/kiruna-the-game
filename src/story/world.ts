@@ -4,6 +4,9 @@ import type { Interaction } from '../activities/interaction';
 import type { Npc, Npcs } from '../npc/npcs';
 import type { Igloo } from '../activities/igloo';
 import type { Sauna } from '../activities/sauna';
+import type { Yurt } from '../activities/yurt';
+import type { createCamp } from '../world/camp';
+import { ICEHOTEL } from '../world/terrain';
 import type { Player } from '../player/player';
 import { Pockets } from '../ui/pockets';
 import { Carry } from './carry';
@@ -14,6 +17,12 @@ import { createLakeAct, type Spot } from './lakeact';
 import type { Snowmobile } from '../vehicles/snowmobile';
 import { createFishKey } from './fishkey';
 import { createKeyAct } from './keyact';
+import { createSymbols } from './symbols';
+import { createHeadboard } from './headboard';
+import { createCrypt } from './crypt';
+import { createFinale } from './finale';
+import type { OrbitCamera } from '../player/camera';
+import type { Input } from '../player/input';
 import type { IceHotel } from '../icehotel/icehotel';
 import type { Sky } from '../sky/sky';
 import type { Hud } from '../ui/hud';
@@ -23,6 +32,8 @@ import type { Story } from './state';
 import type { TargetId } from './steps';
 
 const STORY_START_HOUR = 15.3; // blue hour
+
+type Camp = ReturnType<typeof createCamp>;
 
 interface Provider {
   interaction(p: THREE.Vector3): Interaction | null;
@@ -37,19 +48,21 @@ interface Parts {
   npcs: Npcs;
   hotel: IceHotel;
   igloo: Igloo;
-  iglooRot: number;
   sauna: Sauna;
+  yurt: Yurt;
+  camp: Camp;
   player: Player;
-  woodpile: THREE.Vector3;
   sled: Snowmobile;
-  fishing: Parameters<typeof createFishKey>[1];
+  fishing: Parameters<typeof createFishKey>[1] & { away: boolean };
   touch: boolean;
+  orbit: OrbitCamera;
+  /** The finale is on screen: hide the HUD; and when it ends, free the mouse for the end screen. */
+  onCinematic: () => void;
+  onEnd: () => void;
   /** Gyuri stays out of sight until his chapter, then chills in the yurt. */
   gyuri: Npc;
-  gyuriSpot: () => Spot;
   /** Screen shake etc. when the snowmobile hits the spruce. */
   onCrash: () => void;
-  targets: Record<TargetId, THREE.Vector3>;
 }
 
 /**
@@ -57,16 +70,48 @@ interface Parts {
  * each chapter gives a piece back. Everything here is a pass-through in free roam.
  */
 export function createStoryWorld(parts: Parts) {
-  const { scene, world, story, sky, hud, npcs, hotel, targets } = parts;
+  const { scene, world, story, sky, hud, npcs, hotel, camp, sauna } = parts;
+  const at = (x: number, z: number) => new THREE.Vector3(x, 0, z);
+  const targets: Record<TargetId, THREE.Vector3> = {
+    igloo: at(camp.igloo.x, camp.igloo.z),
+    sauna: sauna.centre,
+    gyuri: at(camp.yurt.x, camp.yurt.z),
+    spruce: at(72, -96), // the lone spruce on the ice (main.ts plants it)
+    farm: at(camp.dogFarm.x, camp.dogFarm.z),
+    hotel: at(ICEHOTEL.x, ICEHOTEL.front + 3),
+    fishing: at(sauna.centre.x + 9.5, sauna.centre.z - 2.5),
+    suite: hotel.rooms[4].position.clone(), // the Royal Suite
+  };
+  // Gyuri leaves the snowmobile for a seat by the fire in the yurt (reserved only in story mode).
+  const gyuriSpot = (): Spot => {
+    const s = parts.yurt.reserveBackSeat();
+    return { at: s.root, heading: s.heading, opts: { pose: 'sit', talkFrom: s.front, talkRadius: 1.1, reachable: (p) => parts.yurt.isInside(p) } };
+  };
   const beacon = new Beacon(scene);
   const pockets = new Pockets();
   const carry = new Carry(scene, parts.player);
-  const iglooBuild = createIglooBuild(scene, world, story, parts.igloo, parts.iglooRot, carry, parts.player);
-  const saunaHeat = createSaunaHeat(story, parts.sauna, carry, parts.woodpile);
+  const iglooBuild = createIglooBuild(scene, world, story, parts.igloo, camp.igloo.rot, carry, parts.player);
+  const saunaHeat = createSaunaHeat(story, sauna, carry, at(camp.woodpile.x, camp.woodpile.z));
   const fishKey = createFishKey(story, parts.fishing, npcs, parts.touch);
   const keyAct = createKeyAct(story, npcs, hotel);
-  const activities = [fishKey, iglooBuild, saunaHeat];
-  const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, parts.gyuriSpot, targets.spruce);
+  const suite = hotel.rooms[4];
+  const symbols = createSymbols(story, hotel.rooms);
+  const headboard = createHeadboard(story, suite, parts.player, parts.touch);
+  const finale = createFinale({
+    npcs, player: parts.player, orbit: parts.orbit, sky, king: hotel.king, touch: parts.touch, hotelDoor: hotel.door.at,
+    onCinematic: () => {
+      parts.fishing.away = true; // Alex and Boti come along: no fishing lines across the lake
+      parts.onCinematic();
+    },
+    onEnd: parts.onEnd,
+  });
+  const crypt = createCrypt(scene, world, story, npcs, parts.player, parts.orbit, hotel.king, suite.position.clone(),
+    () => headboard.stairsAt.clone(), () => {
+      story.advance('crypt');
+      finale.start();
+    });
+  const activities = [fishKey, iglooBuild, saunaHeat, symbols, headboard, crypt];
+  const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, gyuriSpot, targets.spruce);
   const snowRun = createSnowRun(scene, story, parts.sled, sky, targets.spruce, (at) => {
     lakeAct.crashed(at);
     parts.onCrash();
@@ -124,7 +169,7 @@ export function createStoryWorld(parts: Parts) {
   story.onChange((chapterChanged) => {
     carry.drop();
     refresh();
-    if (chapterChanged) {
+    if (chapterChanged && story.current) {
       hud.chapter(story.chapter, story.chapterTitle);
       hud.flash('Progress saved');
     }
@@ -132,6 +177,7 @@ export function createStoryWorld(parts: Parts) {
 
   return {
     gate,
+    finale,
     /** Chapter mini-games (cut a block, take logs...). */
     activities: {
       interaction(p: THREE.Vector3): Interaction | null {
@@ -175,13 +221,21 @@ export function createStoryWorld(parts: Parts) {
       saunaHeat.begin();
       lakeAct.begin();
       keyAct.begin();
+      symbols.begin();
+      headboard.begin();
+      crypt.begin();
+      sky.hideSnowIn(hotel.bounds.clone().union(crypt.box), 2);
       npcs.setHidden(hotel.king, true); // the throne starts empty
       if (!story.reached('rooms')) lockDoor();
       refresh();
       hud.chapter(story.chapter, story.chapterTitle);
     },
-    update(dt: number, player: THREE.Vector3): void {
+    update(dt: number, player: THREE.Vector3, input: Input): void {
       if (!story.active) return;
+      finale.update(dt);
+      symbols.update(dt);
+      headboard.update(dt, input);
+      crypt.update();
       if (door && story.reached('rooms')) unlockDoor();
       beacon.update(dt, player);
       iglooBuild.update(dt);

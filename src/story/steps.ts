@@ -38,7 +38,7 @@ export const STEPS: Step[] = [
   { id: 'linnea', chapter: 5, objective: 'Talk to Linnéa outside the ICEHOTEL', target: 'hotel' },
   { id: 'fish-key', chapter: 5, objective: 'Fish for the key with Alex and Boti', target: 'fishing' },
   { id: 'open-door', chapter: 5, objective: 'Unlock the ICEHOTEL', target: 'hotel' },
-  { id: 'rooms', chapter: 6, objective: 'Find a carved symbol in each art room', target: 'hotel' },
-  { id: 'headboard', chapter: 6, objective: 'Press the sunburst headboard in the Royal Suite', target: 'suite' },
+  { id: 'rooms', chapter: 6, objective: 'Find the carved symbol in each of the four art rooms', target: 'hotel' },
+  { id: 'headboard', chapter: 6, objective: 'Press the Royal Suite headboard bars in the right order', target: 'suite' },
   { id: 'crypt', chapter: 7, objective: 'Go down to the crypt and wake the King', target: 'suite' },
 ];

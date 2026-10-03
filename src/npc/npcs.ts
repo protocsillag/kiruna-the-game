@@ -162,6 +162,10 @@ export class Npcs {
     npc.collider?.setTranslation({ x: at.x, y: at.y + 0.87, z: at.z });
   }
 
+  byName(name: string): Npc | undefined {
+    return this.list.find((n) => n.name === name);
+  }
+
   setHidden(npc: Npc, hidden: boolean): void {
     npc.hidden = hidden;
     npc.character.root.visible = !hidden;

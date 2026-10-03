@@ -13,3 +13,4 @@ No third-party models, textures or sounds yet. Terrain, ice and the player chara
 ## Music
 
 - "Egy jó asszony mindent megbocsájt" by Zámbó Jimmy (`public/audio/the-king.mp3`) — added by the project owner for a private group of friends; all rights belong to the rights holders. Remove on request.
+- "Még nem veszíthetek" by Zámbó Jimmy (`public/audio/meg-nem-veszithetek.mp3`) — the story mode finale song, added by the project owner for a private group of friends; all rights belong to the rights holders. Remove on request.

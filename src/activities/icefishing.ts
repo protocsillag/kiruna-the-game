@@ -131,6 +131,8 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
     },
     /** Story mode: 0..1 how hard the player's line is twitching (a bite). */
     twitch: 0,
+    /** Story finale: Alex and Boti have gone to the ICEHOTEL, so no rods or lines. */
+    away: false,
     interaction(p: THREE.Vector3): Interaction | null {
       if (fishing) return leave;
       if (player.locked) return null;
@@ -143,8 +145,8 @@ export function createIceFishing(scene: THREE.Scene, world: World, npcs: Npcs, p
       // A little jig now and then.
       fishers.forEach((c, i) => (c.armOverride[0] = -0.85 + Math.max(0, Math.sin(time * 2.4 + i * 2)) * 0.12));
       if (fishing) player.character.armOverride[0] = -0.85 + Math.max(0, Math.sin(time * 2.1)) * 0.12 + api.twitch * Math.sin(time * 38) * 0.18;
-      placeRod(0, fishers[0]);
-      placeRod(1, fishers[1]);
+      placeRod(0, api.away ? null : fishers[0]);
+      placeRod(1, api.away ? null : fishers[1]);
       placeRod(2, fishing ? player.character : null);
       lineGeo.attributes.position.needsUpdate = true;
     },

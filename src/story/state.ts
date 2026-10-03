@@ -88,7 +88,8 @@ export class Story {
   /** Enter story mode, from the save or from the very beginning. */
   begin(fresh: boolean): void {
     this.mode = 'story';
-    const s = fresh ? null : readSave();
+    const saved = fresh ? null : readSave();
+    const s = saved?.step === 'end' ? null : saved; // a finished story starts again
     this.step = s ? Math.max(0, indexOf(s.step)) : 0;
     this.flags = new Set(s?.flags ?? []);
     this.items = new Set(s?.items ?? []);

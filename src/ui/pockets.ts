@@ -2,6 +2,10 @@
 const ITEMS: Record<string, { icon: string; name: string }> = {
   flask: { icon: '🥃', name: "Balazs's whiskey flask" },
   key: { icon: '🗝️', name: 'The ICEHOTEL key' },
+  'sym-cat': { icon: '🐱', name: 'II' },
+  'sym-bird': { icon: '🐦', name: 'IV' },
+  'sym-train': { icon: '🚋', name: 'VII' },
+  'sym-lotus': { icon: '🪷', name: 'VI' },
 };
 
 export class Pockets {
