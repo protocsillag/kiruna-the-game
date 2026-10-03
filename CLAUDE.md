@@ -46,6 +46,14 @@ A relaxed, cozy 3D open-world browser game set at **Camp Alta, Kiruna, Swedish L
 - [x] **M2 Sky**: day/night curve, stars, aurora shader, snowfall, fog, bloom, ambient wind audio.
 - [x] **M3 Camp & sauna**: cabins, lodge, trees, trail poles, sauna interior + stove interaction, ice hole.
 - [x] **M4 Snowmobile & polish**: snowmobile enter/exit, handling, tracks, sound, headlight; interaction prompts, quality toggle, README.
+- [ ] **M5 Story spine**: Story / Free roam on the title card, story state, objective line, changing dialogue, save. Story mode starts dimmed.
+- [ ] **M6 Camp act**: ch. 1 igloo build, ch. 2 sauna heating.
+- [ ] **M7 Lake act**: ch. 3 snowmobile run + forced crash, ch. 4 Yoppi insurance talk + dog sled ride.
+- [ ] **M8 The key**: ch. 5 locked hotel, Linnéa's hint, fish for the key.
+- [ ] **M9 Hotel act**: ch. 6 room symbols + headboard, ch. 7 crypt, finale, congratulations screen, load free roam.
+- [ ] **M10 Polish**: hints, phone pass, playtest fixes.
+
+Details for M5–M10 are in docs/STORY_BRIEF.md. Free roam must stay identical to the v1 game.
 
 ## Progress
 
