@@ -45,7 +45,7 @@ export function createBarGuests(
   world: World,
   npcs: Npcs,
   bar: { x: number; front: number; y: number; counterZ: number },
-): { update(dt: number): void } {
+): { king: Npc; update(dt: number): void } {
   const { x: X, front: F, y: Y } = bar;
   const furs = furMaterials();
   const sippers: Sipper[] = [];
@@ -156,6 +156,7 @@ export function createBarGuests(
 
   const hand = new THREE.Vector3();
   return {
+    king: jimmy,
     update(dt) {
       time += dt;
       // The rooster looks around, and pecks at the snow now and then.

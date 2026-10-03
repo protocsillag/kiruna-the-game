@@ -79,7 +79,7 @@ export class Player {
   }
 
   /** Computes this frame's movement; call before world.step(). */
-  update(dt: number, input: Input, cameraYaw: number): void {
+  update(dt: number, input: Pick<Input, 'move' | 'down'>, cameraYaw: number): void {
     if (this.locked) {
       const r = this.locked.root;
       this.body.setNextKinematicTranslation({ x: r.x, y: r.y + FEET, z: r.z });

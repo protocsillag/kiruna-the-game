@@ -7,7 +7,7 @@ import { createHall, type Opening } from './hall';
 import { ICE, ICE_GLOW, SNOW_RELIEF, glow, iceBlockMaterial, icePillar, part, textMaterial, tintedIce, tintedSnice } from './ice';
 import { ROOMS } from './rooms';
 import { createBarGuests } from './guests';
-import type { Npcs } from '../npc/npcs';
+import type { Npc, Npcs } from '../npc/npcs';
 import type { Player } from '../player/player';
 import type { Interaction } from '../activities/interaction';
 
@@ -66,6 +66,10 @@ export function iceHotelClearings(): { x: number; z: number; r: number }[] {
 
 export interface IceHotel {
   bounds: THREE.Box3;
+  /** Jimmy on his throne in the Ice Bar. */
+  king: Npc;
+  /** The front doorway (centre on the floor, opening size), for story mode's lock. */
+  door: { at: THREE.Vector3; w: number; h: number };
   interaction(p: THREE.Vector3): Interaction | null;
   status(p: THREE.Vector3): string | null;
   update(dt: number): void;
@@ -294,6 +298,8 @@ export function createIceHotel(scene: THREE.Scene, world: World, npcs: Npcs, pla
   const bounds = new THREE.Box3(new THREE.Vector3(X - 11.5, Y - 1, F - 74.5), new THREE.Vector3(X + 11.5, Y + 12, F + 0.5));
   return {
     bounds,
+    king: guests.king,
+    door: { at: new THREE.Vector3(X, Y, F), w: 2.6, h: 3.2 },
     interaction(p) {
       if (player.locked || !inside(BAR, p)) return null;
       return Math.abs(p.z - (COUNTER_Z + 0.9)) < 1.0 && Math.abs(p.x - (X - 1)) < 4.2 ? order : null;

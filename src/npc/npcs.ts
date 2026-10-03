@@ -24,17 +24,46 @@ export interface NpcDef {
 export interface Npc extends NpcDef {
   character: Character;
   tag: HTMLElement;
+  /** Out of the world for now (e.g. the King's empty throne in story mode). */
+  hidden?: boolean;
+}
+
+/** A reply the player can pick; `reply` is what the person says back. */
+export interface Choice {
+  text: string;
+  reply?: string;
+  then?: () => void;
+}
+
+export interface Line {
+  text: string;
+  choices?: Choice[];
+}
+
+/** Story mode's lines for a person, or null to use their fixed `line`. */
+export type Script = (name: string) => Line[] | null;
+
+interface Conversation {
+  npc: Npc;
+  lines: Line[];
+  i: number;
+  pick: number;
 }
 
 const NAME_RANGE = 9;
 const SPEAK_SECONDS = 7;
+const TALK_SECONDS = 45; // a multi-line conversation waits this long for E
 
 /** Named people around camp: name tags, a speech bubble, and heads that turn toward you. */
 export class Npcs {
   private list: Npc[] = [];
   private bubble = document.createElement('div');
-  private speaker: Npc | null = null;
+  private convo: Conversation | null = null;
   private speakUntil = 0;
+  /** Set in story mode: changing, multi-line dialogue chosen by story step. */
+  script: Script | null = null;
+  /** Shown under reply choices. */
+  choiceHint = '';
   private time = 0;
   private v = new THREE.Vector3();
 
@@ -65,6 +94,7 @@ export class Npcs {
     let best: Npc | null = null;
     let bestD = Infinity;
     for (const n of this.list) {
+      if (n.hidden) continue;
       if (n.reachable && !n.reachable(p)) continue;
       const from = n.talkFrom ?? n.at;
       const d = Math.hypot(p.x - from.x, p.z - from.z);
@@ -75,13 +105,94 @@ export class Npcs {
     return { label: `talk to ${npc.name}`, run: () => this.say(npc) };
   }
 
+  /** "E · continue" / "E · answer" while a conversation is waiting for the player. */
+  continuation(p: THREE.Vector3): Interaction | null {
+    const c = this.convo;
+    if (!c || this.time >= this.speakUntil) return null;
+    const line = c.lines[c.i];
+    if (!line.choices && c.i + 1 >= c.lines.length) return null;
+    const from = c.npc.talkFrom ?? c.npc.at;
+    if (Math.hypot(p.x - from.x, p.z - from.z) > (c.npc.talkRadius ?? 2.2) + 1.5) return null;
+    return { label: line.choices ? 'answer' : 'continue', run: () => this.advance() };
+  }
+
+  /** Waiting for the player to pick a reply (main.ts holds walking still meanwhile). */
+  get choosing(): boolean {
+    const c = this.convo;
+    return !!c && !!c.lines[c.i].choices && this.time < this.speakUntil;
+  }
+
+  /** Move the highlighted reply (steer left/right). */
+  steer(dir: number): void {
+    const choices = this.convo?.lines[this.convo.i].choices;
+    if (!this.convo || !choices) return;
+    this.convo.pick = (this.convo.pick + dir + choices.length) % choices.length;
+    this.render();
+  }
+
   say(npc: Npc): void {
-    this.speaker = npc;
-    this.speakUntil = this.time + SPEAK_SECONDS;
+    const lines = this.script?.(npc.name) ?? [{ text: npc.line }];
+    this.convo = { npc, lines, i: 0, pick: 0 };
+    this.show();
+  }
+
+  setHidden(npc: Npc, hidden: boolean): void {
+    npc.hidden = hidden;
+    npc.character.root.visible = !hidden;
+  }
+
+  private advance(): void {
+    const c = this.convo!;
+    const choice = c.lines[c.i].choices?.[c.pick];
+    if (choice) {
+      choice.then?.();
+      if (choice.reply) c.lines.splice(c.i + 1, 0, { text: choice.reply });
+    }
+    if (c.i + 1 >= c.lines.length) {
+      this.convo = null;
+      return;
+    }
+    c.i++;
+    c.pick = 0;
+    this.show();
+  }
+
+  private show(): void {
+    const c = this.convo!;
+    const waits = !!c.lines[c.i].choices || c.i + 1 < c.lines.length;
+    this.speakUntil = this.time + (waits ? TALK_SECONDS : SPEAK_SECONDS);
+    this.render();
+  }
+
+  private render(): void {
+    const c = this.convo!;
+    const line = c.lines[c.i];
     this.bubble.innerHTML = '';
     const who = document.createElement('b');
-    who.textContent = npc.name;
-    this.bubble.append(who, document.createTextNode(npc.line));
+    who.textContent = c.npc.name;
+    this.bubble.append(who, document.createTextNode(line.text));
+    if (line.choices) {
+      const list = document.createElement('ol');
+      line.choices.forEach((ch, i) => {
+        const li = document.createElement('li');
+        li.textContent = ch.text;
+        li.classList.toggle('on', i === c.pick);
+        li.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          c.pick = i;
+          this.advance();
+        });
+        list.append(li);
+      });
+      const hint = document.createElement('small');
+      hint.textContent = this.choiceHint;
+      this.bubble.append(list, hint);
+    } else if (c.i + 1 < c.lines.length) {
+      const more = document.createElement('small');
+      more.textContent = '▸';
+      this.bubble.append(more);
+    }
   }
 
   /** Animate, turn heads toward the player, and place name tags + bubble on screen. */
@@ -101,15 +212,15 @@ export class Npcs {
       c.lookYaw += (want - c.lookYaw) * damp(4, dt);
       c.animate(dt, 0, n.pose ?? 'stand');
 
-      const show = dist < NAME_RANGE && (!n.reachable || n.reachable(player));
+      const show = !n.hidden && dist < NAME_RANGE && (!n.reachable || n.reachable(player));
       this.place(n.tag, c, camera, 0.55, show);
     }
-    const s = this.speaker;
+    const s = this.convo?.npc;
     const speaking = !!s && this.time < this.speakUntil &&
       Math.hypot(player.x - s.character.root.position.x, player.z - s.character.root.position.z) < 10;
     if (s) this.place(this.bubble, s.character, camera, 0.95, speaking);
     else this.bubble.classList.remove('visible');
-    if (!speaking) this.speaker = null;
+    if (!speaking) this.convo = null;
   }
 
   /** Pin a DOM element above a character's head, hidden when off-screen or behind the camera. */

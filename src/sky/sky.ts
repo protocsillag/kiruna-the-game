@@ -15,6 +15,8 @@ const MIN_LIGHT_ELEV = Math.sin((6 * Math.PI) / 180); // keep shadows from going
 
 export interface Sky {
   clock: DayClock;
+  /** Story mode switches the northern lights off until the finale. */
+  aurora: boolean;
   hideSnowIn(box: THREE.Box3, slot: number): void;
   setQuality(high: boolean, pixelRatio: number): void;
   update(dt: number, camera: THREE.Vector3, focus: THREE.Vector3, gust: number): Palette;
@@ -53,6 +55,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
 
   return {
     clock,
+    aurora: true,
     hideSnowIn: (box, slot) => snow.hideIn(box, slot),
     setQuality(high, pixelRatio) {
       key.castShadow = high;
@@ -67,7 +70,7 @@ export function createSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Sk
       clock.sunDirection(sunDir);
       clock.moonDirection(moonDir);
 
-      const auroraStrength = p.aurora * (0.7 + 0.3 * Math.sin(time * 0.021));
+      const auroraStrength = this.aurora ? p.aurora * (0.7 + 0.3 * Math.sin(time * 0.021)) : 0;
       dome.update(camera, p, sunDir, time);
       stars.update(camera, p.stars, time);
       aurora.update(camera, auroraStrength, time);

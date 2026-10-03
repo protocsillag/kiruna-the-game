@@ -32,6 +32,11 @@ import { Footprints } from './player/footprints';
 import { Breath } from './player/breath';
 import { setupOverlay, showError } from './ui/overlay';
 import { isTouchDevice, TouchControls } from './ui/touch';
+import { Story } from './story/state';
+import { createStoryWorld } from './story/world';
+
+/** Walking held still while picking a reply in a conversation. */
+const STILL = { move: () => ({ fwd: 0, side: 0 }), down: () => false };
 
 async function start(): Promise<void> {
   // Phones/tablets get touch controls and lighter defaults; everything touch-only is gated on this.
@@ -123,7 +128,32 @@ async function start(): Promise<void> {
   const sz = gc.z - 1.0 * Math.sin(gc.rot) + 5.2 * Math.cos(gc.rot);
   createIceHotelSign(scene, world, onGround(sx, sz), camp.spawn, new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front));
 
-  const providers = [sled, dogs, fishing, hotel, talk, sauna, yurt, igloo];
+  // Story mode: a layer over the same world. In free roam the gates and extras are pass-throughs.
+  const story = new Story();
+  const storyWorld = createStoryWorld({
+    scene, world, story, sky, hud, npcs, hotel,
+    targets: {
+      igloo: new THREE.Vector3(camp.igloo.x, 0, camp.igloo.z),
+      sauna: sauna.centre,
+      gyuri,
+      spruce: new THREE.Vector3(72, 0, -96),
+      farm: new THREE.Vector3(camp.dogFarm.x, 0, camp.dogFarm.z),
+      hotel: new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front + 3),
+      fishing: new THREE.Vector3(sauna.centre.x + 9.5, 0, sauna.centre.z - 2.5),
+      suite: new THREE.Vector3(ICEHOTEL.x, 0, ICEHOTEL.front - 30),
+    },
+  });
+  npcs.choiceHint = touch ? 'Tap an answer' : 'A / D to choose · E to answer';
+  const gate = storyWorld.gate;
+  const providers = [
+    { interaction: (p: THREE.Vector3) => npcs.continuation(p) },
+    gate(sled, 'snowmobile-run', 'Gyuri has the key'),
+    gate(dogs, 'harness', 'the farm gate is shut'),
+    fishing, hotel, storyWorld.door, talk,
+    gate(sauna, 'heat-sauna', 'the sauna is cold'),
+    yurt,
+    gate(igloo, null, null), // no King's song in story mode
+  ];
   const ignored = new Set([player.collider.handle, sled.collider.handle, ...dogs.cameraIgnore, ...sauna.cameraIgnore]);
   const cameraSees = (c: { handle: number }) => !ignored.has(c.handle);
 
@@ -137,6 +167,7 @@ async function start(): Promise<void> {
   const tint = new THREE.Color(0xffffff);
   let darkness = 0;
   let wasRiding = false;
+  let lastSteer = 0;
   const footprints = new Footprints(scene);
   const breath = new Breath(scene);
 
@@ -163,6 +194,12 @@ async function start(): Promise<void> {
       igloo.pause();
     },
     touch,
+    {
+      savedStep: Story.savedStep(),
+      pick: (mode, fresh) => {
+        if (mode === 'story') storyWorld.begin(fresh);
+      },
+    },
   );
   if (touch) new TouchControls(input, () => overlay.pause());
 
@@ -180,7 +217,13 @@ async function start(): Promise<void> {
 
     sled.drive(dt, input);
     dogs.drive(dt, input);
-    player.update(dt, input, orbit.yaw);
+    if (npcs.choosing) {
+      const side = input.move().side;
+      const steer = side > 0.5 ? 1 : side < -0.5 ? -1 : 0;
+      if (steer && steer !== lastSteer) npcs.steer(steer);
+      lastSteer = steer;
+    }
+    player.update(dt, npcs.choosing ? STILL : input, orbit.yaw);
     world.timestep = dt;
     world.step();
     sled.sync(dt, darkness, tint, wind.gust);
@@ -227,6 +270,7 @@ async function start(): Promise<void> {
     farm.update(dt);
     sauna.update(dt, tint);
     yurt.update(dt, tint);
+    storyWorld.update(dt, player.position);
     hud.update(sky.clock);
     post.render();
     input.endFrame();
