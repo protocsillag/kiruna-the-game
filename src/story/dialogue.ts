@@ -71,6 +71,7 @@ const SCRIPT: Record<string, [string, Lines][]> = {
           { text: 'Only if you share the whiskey.', reply: 'Deal. Well... we will think about it.', then: () => s.advance('arrive') },
         ],
       },
+      { text: 'And while you work, we will sing you one of his songs.' },
     ]],
     ['build-igloo', say('Cut snow blocks at the drift over there and put them where it glows.', 'We would help, but the bottle needs holding.')],
     ['igloo-done', (s, cue) => [

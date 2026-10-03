@@ -248,7 +248,7 @@ export function createStoryWorld(parts: Parts) {
       if (door && story.reached('rooms')) unlockDoor();
       beacon.update(dt, player);
       iglooBuild.update(dt);
-      parts.igloo.background(story.at('build-igloo'), 0.4); // the King, quietly, while you build
+      parts.igloo.background(story.at('build-igloo'), 0.2); // the King, quietly, while you build
       saunaHeat.update(dt);
       snowRun.update(dt);
       fishKey.update(dt);
