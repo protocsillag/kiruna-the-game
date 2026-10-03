@@ -64,6 +64,8 @@ export interface Igloo {
   setSize(s: number): void;
   interaction(p: THREE.Vector3): Interaction | null;
   status(p: THREE.Vector3): string | null;
+  /** Story mode's igloo building: the song plays quietly in the background (scale × free-roam volume). */
+  background(on: boolean, scale: number): void;
   /** Esc pause: hold the music, and pick it back up on resume. */
   pause(): void;
   resume(): void;
@@ -157,6 +159,7 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
   audio.loop = true;
   audio.preload = 'none';
   let playing = false;
+  let volumeScale = 1;
   let state: 'idle' | 'loading' | 'playing' | 'error' = 'idle';
   audio.addEventListener('playing', () => (state = 'playing'));
   audio.addEventListener('waiting', () => (state = 'loading'));
@@ -197,6 +200,12 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
       if (!playing || d > HEARING) return null;
       return state === 'loading' ? 'Calling the King…' : null; // no title while it plays
     },
+    background(on, scale) {
+      if (on === playing) return;
+      volumeScale = scale;
+      if (on) start();
+      else stop();
+    },
     pause() {
       if (playing) audio.pause();
     },
@@ -206,7 +215,7 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
     update(p) {
       if (!playing) return;
       const d = Math.hypot(p.x - entrance.x, p.z - entrance.z);
-      audio.volume = THREE.MathUtils.clamp(1.1 - d / (HEARING * 0.9), 0, 1) * 0.9;
+      audio.volume = THREE.MathUtils.clamp(1.1 - d / (HEARING * 0.9), 0, 1) * 0.9 * volumeScale;
     },
   };
 }

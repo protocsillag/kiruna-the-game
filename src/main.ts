@@ -21,6 +21,7 @@ import { createWhiskeyPair } from './npc/whiskey';
 import { createIceFishing } from './activities/icefishing';
 import { createIceHotel, iceHotelClearings } from './icehotel/icehotel';
 import { createIceHotelSign } from './world/signpost';
+import { createKingSong } from './icehotel/kingsong';
 import { createSky } from './sky/sky';
 import { createPostFX } from './sky/postfx';
 import { Wind } from './audio/wind';
@@ -122,6 +123,7 @@ async function start(): Promise<void> {
   const talk = { interaction: (p: THREE.Vector3) => npcs.interaction(p, !!player.locked) };
   const hotel = createIceHotel(scene, world, npcs, player);
   sky.hideSnowIn(hotel.bounds, 2);
+  const kingSong = createKingSong(npcs, hotel.king);
   // "Visit the Ice Hotel" sign just behind the glass-roof cabin (cabin-local +Z is its back),
   // facing the spawn point, arrow toward the hotel door.
   const gc = camp.glassCabin;
@@ -132,7 +134,7 @@ async function start(): Promise<void> {
   // Story mode: a layer over the same world. In free roam the gates and extras are pass-throughs.
   const story = new Story();
   const storyWorld = createStoryWorld({
-    scene, world, story, sky, hud, npcs, hotel, igloo, sauna, yurt, camp, player, sled, gyuri: gyuriNpc, fishing, touch, orbit,
+    scene, world, story, sky, hud, npcs, hotel, igloo, sauna, yurt, camp, player, sled, gyuri: gyuriNpc, fishing, touch, orbit, kingSong,
     onCinematic: () => document.body.classList.add('cinematic'),
     onEnd: () => {
       overlay.hold(true); // the end screen needs the mouse back without showing the pause card
@@ -147,7 +149,7 @@ async function start(): Promise<void> {
     storyWorld.activities,
     gate(sled, () => story.at('snowmobile-run'), () => (story.reached('crash') ? 'the snowmobile is wrecked' : 'the snowmobile has no key')),
     gate(dogs, () => story.reached('ride')), // no locked prompt: it would cover talking to Thomasz beside the team
-    fishing, hotel, storyWorld.door, talk,
+    fishing, hotel, storyWorld.door, kingSong, talk,
     gate(sauna, () => story.reached('heat-sauna'), () => 'the sauna is cold'),
     yurt,
     gate(igloo, () => false), // no King's song in story mode
@@ -186,11 +188,13 @@ async function start(): Promise<void> {
       }
       wind.start();
       igloo.resume();
+      kingSong.resume();
       storyWorld.finale.resume();
     },
     () => {
       wind.suspend();
       igloo.pause();
+      kingSong.pause();
       storyWorld.finale.pause();
     },
     touch,
@@ -253,6 +257,7 @@ async function start(): Promise<void> {
       storyWorld.status(player.position) ?? sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? hotel.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
     );
     igloo.update(player.position);
+    kingSong.update(player.position);
     fx.update(dt, heat);
     orbit.shake = fx.shake;
     orbit.follow(dt, vehicle?.heading ?? 0, !!vehicle && Math.abs(vehicle.speed) > 2);

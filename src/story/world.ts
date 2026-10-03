@@ -56,6 +56,7 @@ interface Parts {
   fishing: Parameters<typeof createFishKey>[1] & { away: boolean };
   touch: boolean;
   orbit: OrbitCamera;
+  kingSong: { enabled: boolean };
   /** The finale is on screen: hide the HUD; and when it ends, free the mouse for the end screen. */
   onCinematic: () => void;
   onEnd: () => void;
@@ -233,6 +234,7 @@ export function createStoryWorld(parts: Parts) {
       crypt.begin();
       sky.hideSnowIn(hotel.bounds.clone().union(crypt.box), 2);
       npcs.setHidden(hotel.king, true); // the throne starts empty
+      parts.kingSong.enabled = false; // his song belongs to the finale
       if (!story.reached('rooms')) lockDoor();
       refresh();
       hud.chapter(story.chapter, story.chapterTitle);
@@ -246,6 +248,7 @@ export function createStoryWorld(parts: Parts) {
       if (door && story.reached('rooms')) unlockDoor();
       beacon.update(dt, player);
       iglooBuild.update(dt);
+      parts.igloo.background(story.at('build-igloo'), 0.4); // the King, quietly, while you build
       saunaHeat.update(dt);
       snowRun.update(dt);
       fishKey.update(dt);
