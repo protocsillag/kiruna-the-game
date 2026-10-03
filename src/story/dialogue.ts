@@ -116,9 +116,9 @@ const SCRIPT: Record<string, [string, Lines][]> = {
     ['arrive', say('Brr. Nobody has put wood in the stove all day.', 'Some sauna this is.')],
     ['sauna-ask', (s) => [
       { text: 'Finally, someone! It is freezing in here.' },
-      { text: 'The stove went out and nobody brings wood. The woodpile is by the lodge. Two logs at a time, please.', then: () => s.advance('sauna-ask') },
+      { text: 'The stove went out and nobody brings wood. I saw a pile of wood next to the main lodge. Two logs at a time, please.', then: () => s.advance('sauna-ask') },
     ]],
-    ['heat-sauna', say('More wood! It has to be eighty degrees, not a degree less.')],
+    ['heat-sauna', say('More wood! I saw plenty stacked by the main lodge.', 'It has to be eighty degrees, not a degree less.')],
     ['sauna-done', sawHimLeave('Ahh. Now that is a sauna.')],
     ['find-gyuri', say('Go and find Yoppi. Gyuri knows which way he went.')],
   ],
