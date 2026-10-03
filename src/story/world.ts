@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import RAPIER, { type Collider, type World } from '@dimforge/rapier3d-compat';
 import type { Interaction } from '../activities/interaction';
-import type { Npcs } from '../npc/npcs';
+import type { Npc, Npcs } from '../npc/npcs';
+import type { Igloo } from '../activities/igloo';
+import type { Sauna } from '../activities/sauna';
+import type { Player } from '../player/player';
+import { Pockets } from '../ui/pockets';
+import { Carry } from './carry';
+import { createIglooBuild } from './igloobuild';
+import { createSaunaHeat } from './saunaheat';
 import type { IceHotel } from '../icehotel/icehotel';
 import type { Sky } from '../sky/sky';
 import type { Hud } from '../ui/hud';
@@ -24,6 +31,13 @@ interface Parts {
   hud: Hud;
   npcs: Npcs;
   hotel: IceHotel;
+  igloo: Igloo;
+  iglooRot: number;
+  sauna: Sauna;
+  player: Player;
+  woodpile: THREE.Vector3;
+  /** Gyuri stays out of sight until his chapter. */
+  gyuri: Npc;
   targets: Record<TargetId, THREE.Vector3>;
 }
 
@@ -31,8 +45,14 @@ interface Parts {
  * Story mode on top of the finished world: it starts dimmed (no aurora, no King, locked doors) and
  * each chapter gives a piece back. Everything here is a pass-through in free roam.
  */
-export function createStoryWorld({ scene, world, story, sky, hud, npcs, hotel, targets }: Parts) {
+export function createStoryWorld(parts: Parts) {
+  const { scene, world, story, sky, hud, npcs, hotel, targets } = parts;
   const beacon = new Beacon(scene);
+  const pockets = new Pockets();
+  const carry = new Carry(scene, parts.player);
+  const iglooBuild = createIglooBuild(scene, world, story, parts.igloo, parts.iglooRot, carry, parts.player);
+  const saunaHeat = createSaunaHeat(story, parts.sauna, carry, parts.woodpile);
+  const activities = [iglooBuild, saunaHeat];
 
   /**
    * Wrap an interaction provider: until the story reaches `step`, the prompt it would show
@@ -78,8 +98,11 @@ export function createStoryWorld({ scene, world, story, sky, hud, npcs, hotel, t
     const step = story.current;
     hud.objective(step?.objective ?? null);
     beacon.point(step?.target ? targets[step.target] : null);
+    pockets.show(story.items);
+    npcs.setHidden(parts.gyuri, !story.reached('find-gyuri'));
   };
   story.onChange((chapterChanged) => {
+    carry.drop();
     refresh();
     if (chapterChanged) {
       hud.chapter(story.chapter, story.chapterTitle);
@@ -89,6 +112,25 @@ export function createStoryWorld({ scene, world, story, sky, hud, npcs, hotel, t
 
   return {
     gate,
+    /** Chapter mini-games (cut a block, take logs...). */
+    activities: {
+      interaction(p: THREE.Vector3): Interaction | null {
+        if (!story.active) return null;
+        for (const a of activities) {
+          const action = a.interaction(p);
+          if (action) return action;
+        }
+        return null;
+      },
+    },
+    status(p: THREE.Vector3): string | null {
+      if (!story.active) return null;
+      for (const a of activities) {
+        const text = a.status(p);
+        if (text) return text;
+      }
+      return null;
+    },
     /** Shown at the locked hotel door. */
     door: {
       interaction(p: THREE.Vector3): Interaction | null {
@@ -103,7 +145,11 @@ export function createStoryWorld({ scene, world, story, sky, hud, npcs, hotel, t
       sky.aurora = false;
       sky.clock.nightOnly = true;
       sky.clock.hours = STORY_START_HOUR;
-      npcs.script = storyScript(story);
+      npcs.script = storyScript(story, {
+        instagram: () => hud.post('@kiruna.nights', '👑🎸', 'Thank you Camp Alta! Another night of songs by the fire. Same time tomorrow? ❄️'),
+      });
+      iglooBuild.begin();
+      saunaHeat.begin();
       npcs.setHidden(hotel.king, true); // the throne starts empty
       if (!story.reached('rooms')) lockDoor();
       refresh();
@@ -113,6 +159,10 @@ export function createStoryWorld({ scene, world, story, sky, hud, npcs, hotel, t
       if (!story.active) return;
       if (door && story.reached('rooms')) unlockDoor();
       beacon.update(dt, player);
+      iglooBuild.update(dt);
+      saunaHeat.update(dt);
+      carry.update();
+      pockets.show(story.items);
     },
   };
 }

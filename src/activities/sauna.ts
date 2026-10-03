@@ -37,6 +37,11 @@ export interface Sauna {
   status(p: THREE.Vector3): string | null;
   interaction(p: THREE.Vector3): Interaction | null;
   update(dt: number, tint: THREE.Color): void;
+  readonly temperature: number;
+  /** Story mode: logs must be carried in from the woodpile (null = the stove never runs out). */
+  wood: { has(): boolean; use(): void } | null;
+  /** Story mode keeps the cold dip closed until the sauna is restored. */
+  allowDip: () => boolean;
 }
 
 /** Camp Alta's sauna on the ice: room for 16, a wood stove you stoke with E, and an ice hole inside. */
@@ -165,13 +170,15 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
   const stoke: Interaction = {
     label: 'add wood',
     run() {
+      api.wood?.use();
       logs = Math.min(MAX_LOGS, logs + 1);
       steam.burst(3);
     },
   };
   const full: Interaction = { label: 'the stove is full', run() {} };
+  const noWood: Interaction = { label: 'bring wood from the woodpile', run() {} };
 
-  return {
+  const api: Sauna = {
     interior,
     centre: new THREE.Vector3(cx, floorY, cz),
     upperSeat: (lx) => ({
@@ -181,6 +188,11 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
     get dipping() {
       return hole.dipping;
     },
+    get temperature() {
+      return temp;
+    },
+    wood: null,
+    allowDip: () => true,
     cameraIgnore: hole.cameraIgnore,
     isInside,
     warmth: (p) => (isInside(p) ? THREE.MathUtils.clamp((temp - 35) / 55, 0, 1) : 0),
@@ -192,9 +204,9 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
     interaction(p) {
       if (sitting) return stand;
       if (hole.dipping || !isInside(p)) return null;
-      const viaHole = hole.interaction(p);
+      const viaHole = api.allowDip() ? hole.interaction(p) : null;
       const dStove = Math.hypot(p.x - stoveFront.x, p.z - stoveFront.z);
-      if (dStove < 1.2) return logs > MAX_LOGS - 0.5 ? full : stoke;
+      if (dStove < 1.2) return logs > MAX_LOGS - 0.5 ? full : api.wood && !api.wood.has() ? noWood : stoke;
       if (viaHole) return viaHole;
       if (p.z - benchEdge < 1.1) return sit;
       return null;
@@ -220,4 +232,5 @@ export function createSauna(scene: THREE.Scene, world: World, player: Player, on
       chimney.update(dt, 0.8, 0.3);
     },
   };
+  return api;
 }

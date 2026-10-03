@@ -19,6 +19,8 @@ export interface Camp {
   yurt: { x: number; z: number; rot: number };
   /** The "Ice Hostel" snow igloo beside the lodge (built by activities/igloo.ts). */
   igloo: { x: number; z: number; rot: number };
+  /** Logs stacked beside the lodge (story mode carries them to the sauna). */
+  woodpile: { x: number; z: number; rot: number };
   /** Gate of the husky farm east of the cabins (built by world/dogfarm.ts). */
   dogFarm: { x: number; z: number; rot: number };
   /** The glass-roof cabin next to where the snowmobile is parked. */
@@ -103,7 +105,8 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
   const lodgeRot = faceLake(lodgeX, lodgeZ);
   porchLight(scene, lodge.group.localToWorld(new THREE.Vector3(-1.0, 2.5, -4.62)), lodgeRot);
   // Woodpile on the lodge's left side; the Ice Hostel takes the roomier right side.
-  woodpile(scene, world, lodgeX - 9.2 * Math.cos(lodgeRot), lodgeZ + 9.2 * Math.sin(lodgeRot), lodgeRot);
+  const pile = { x: lodgeX - 9.2 * Math.cos(lodgeRot), z: lodgeZ + 9.2 * Math.sin(lodgeRot), rot: lodgeRot };
+  woodpile(scene, world, pile.x, pile.z, pile.rot);
 
   [-46, -35, 24, 35, 46].forEach((x, i) => {
     const z = shoreZ(x) + 13 + (i % 2) * 3;
@@ -157,6 +160,7 @@ export function createCamp(scene: THREE.Scene, world: World): Camp {
     igloo,
     dogFarm,
     glassCabin,
+    woodpile: pile,
     clearings,
     update(dt, p, gust) {
       MATS.window.emissiveIntensity = 1.6 + p.stars * 1.8;

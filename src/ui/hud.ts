@@ -5,17 +5,20 @@ export class Hud {
   private el = document.createElement('div');
   private objectiveEl = document.createElement('div');
   private chapterEl = document.createElement('div');
+  private postEl = document.createElement('div');
   private text = '';
   private objectiveText = '';
   private flashText = '';
   private flashUntil = 0;
   private chapterTimer = 0;
+  private postTimer = 0;
 
   constructor() {
     this.el.id = 'hud';
     this.objectiveEl.id = 'objective';
     this.chapterEl.id = 'chapter';
-    document.body.append(this.el, this.objectiveEl, this.chapterEl);
+    this.postEl.id = 'post';
+    document.body.append(this.el, this.objectiveEl, this.chapterEl, this.postEl);
   }
 
   /** Briefly show a message under the clock. */
@@ -42,6 +45,22 @@ export class Hud {
     this.chapterEl.classList.add('visible');
     clearTimeout(this.chapterTimer);
     this.chapterTimer = window.setTimeout(() => this.chapterEl.classList.remove('visible'), 4500);
+  }
+
+  /** A phone-sized social media post held up to the screen for a while (a story clue). */
+  post(user: string, picture: string, caption: string): void {
+    this.postEl.innerHTML = '';
+    const head = document.createElement('b');
+    head.textContent = user;
+    const pic = document.createElement('div');
+    pic.className = 'pic';
+    pic.textContent = picture;
+    const text = document.createElement('p');
+    text.textContent = caption;
+    this.postEl.append(head, pic, text);
+    this.postEl.classList.add('visible');
+    clearTimeout(this.postTimer);
+    this.postTimer = window.setTimeout(() => this.postEl.classList.remove('visible'), 9000);
   }
 
   update(clock: DayClock): void {

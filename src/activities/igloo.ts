@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import RAPIER, { type World } from '@dimforge/rapier3d-compat';
+import RAPIER, { type Collider, type World } from '@dimforge/rapier3d-compat';
 import { fbm } from '../world/noise';
 import { groundHeight } from '../world/terrain';
 import { MATS, mesh } from '../world/materials';
@@ -57,6 +57,11 @@ function signTexture(): THREE.CanvasTexture {
 }
 
 export interface Igloo {
+  /** Mound radius (at full size) and the igloo-local → world transform, for story mode. */
+  radius: number;
+  toWorld(lx: number, lz: number): THREE.Vector3;
+  /** Story mode grows the mound from small to full size (1). */
+  setSize(s: number): void;
   interaction(p: THREE.Vector3): Interaction | null;
   status(p: THREE.Vector3): string | null;
   /** Esc pause: hold the music, and pick it back up on resume. */
@@ -129,16 +134,25 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
     .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
   group.add(sign);
 
-  // Colliders: the mound and the tunnel frame.
+  // Colliders: the mound and the tunnel frame (rebuilt when story mode resizes the mound).
   const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
   const rot = { x: q.x, y: q.y, z: q.z, w: q.w };
   const at = (lx: number, ly: number, lz: number) => new THREE.Vector3(lx, ly, lz).applyQuaternion(q).add(group.position);
-  const c1 = at(0, 1.4, 0);
-  world.createCollider(RAPIER.ColliderDesc.cylinder(1.4, Math.min(RX, RZ) - 0.1).setTranslation(c1.x, c1.y, c1.z));
-  const c2 = at(0, 0.8, ARCH.front + 0.35);
-  world.createCollider(RAPIER.ColliderDesc.cuboid(ARCH.half + ARCH.frame, 0.8, 0.35).setTranslation(c2.x, c2.y, c2.z).setRotation(rot));
+  let colliders: Collider[] = [];
+  let entrance = new THREE.Vector3();
+  const build = (s: number) => {
+    colliders.forEach((c) => world.removeCollider(c, false));
+    group.scale.setScalar(s);
+    const c1 = at(0, 1.4 * s, 0);
+    const c2 = at(0, 0.8 * s, (ARCH.front + 0.35) * s);
+    colliders = [
+      world.createCollider(RAPIER.ColliderDesc.cylinder(1.4 * s, (Math.min(RX, RZ) - 0.1) * s).setTranslation(c1.x, c1.y, c1.z)),
+      world.createCollider(RAPIER.ColliderDesc.cuboid((ARCH.half + ARCH.frame) * s, 0.8 * s, 0.35 * s).setTranslation(c2.x, c2.y, c2.z).setRotation(rot)),
+    ];
+    entrance = at(0, 0, ARCH.front * s - 0.8);
+  };
+  build(1);
 
-  const entrance = at(0, 0, ARCH.front - 0.8);
   const audio = new Audio();
   audio.loop = true;
   audio.preload = 'none';
@@ -170,6 +184,12 @@ export function createIgloo(scene: THREE.Scene, world: World, x: number, z: numb
   const near = (p: THREE.Vector3) => Math.hypot(p.x - entrance.x, p.z - entrance.z) < 2.4;
 
   return {
+    radius: RX,
+    toWorld(lx, lz) {
+      const w = at(lx, 0, lz);
+      return w.setY(groundHeight(w.x, w.z));
+    },
+    setSize: build,
     interaction: (p) => (near(p) ? (playing ? quiet : listen) : null),
     status(p) {
       const d = Math.hypot(p.x - entrance.x, p.z - entrance.z);

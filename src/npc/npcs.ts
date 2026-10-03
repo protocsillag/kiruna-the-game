@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import RAPIER, { type World } from '@dimforge/rapier3d-compat';
+import RAPIER, { type Collider, type World } from '@dimforge/rapier3d-compat';
 import { damp } from '../world/noise';
 import { createCharacter, type Character, type Look, type Pose } from '../player/character';
 import type { Interaction } from '../activities/interaction';
@@ -26,6 +26,7 @@ export interface Npc extends NpcDef {
   tag: HTMLElement;
   /** Out of the world for now (e.g. the King's empty throne in story mode). */
   hidden?: boolean;
+  collider?: Collider;
 }
 
 /** A reply the player can pick; `reply` is what the person says back. */
@@ -38,6 +39,8 @@ export interface Choice {
 export interface Line {
   text: string;
   choices?: Choice[];
+  /** Runs when this line is said (e.g. hand over an item, move the story on). */
+  then?: () => void;
 }
 
 /** Story mode's lines for a person, or null to use their fixed `line`. */
@@ -77,14 +80,14 @@ export class Npcs {
     character.root.position.copy(def.at);
     character.root.rotation.y = def.heading;
     this.scene.add(character.root);
-    if (def.solid) {
-      this.world.createCollider(RAPIER.ColliderDesc.capsule(0.55, 0.3).setTranslation(def.at.x, def.at.y + 0.87, def.at.z));
-    }
+    const collider = def.solid
+      ? this.world.createCollider(RAPIER.ColliderDesc.capsule(0.55, 0.3).setTranslation(def.at.x, def.at.y + 0.87, def.at.z))
+      : undefined;
     const tag = document.createElement('div');
     tag.className = 'npc-name';
     tag.textContent = def.name;
     document.body.append(tag);
-    const npc: Npc = { ...def, character, tag };
+    const npc: Npc = { ...def, character, tag, collider };
     this.list.push(npc);
     return npc;
   }
@@ -139,6 +142,8 @@ export class Npcs {
   setHidden(npc: Npc, hidden: boolean): void {
     npc.hidden = hidden;
     npc.character.root.visible = !hidden;
+    npc.collider?.setEnabled(!hidden);
+    if (hidden && this.convo?.npc === npc) this.convo = null;
   }
 
   private advance(): void {
@@ -162,6 +167,7 @@ export class Npcs {
     const waits = !!c.lines[c.i].choices || c.i + 1 < c.lines.length;
     this.speakUntil = this.time + (waits ? TALK_SECONDS : SPEAK_SECONDS);
     this.render();
+    c.lines[c.i].then?.();
   }
 
   private render(): void {

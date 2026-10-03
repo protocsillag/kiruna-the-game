@@ -92,7 +92,7 @@ async function start(): Promise<void> {
   const onGround = (x: number, z: number) => new THREE.Vector3(x, groundHeight(x, z), z);
   const sledPark = { x: camp.spawn.x + 4, z: camp.spawn.z - 3 };
   const gyuri = onGround(sledPark.x + 1.8, sledPark.z + 0.9);
-  npcs.add({
+  const gyuriNpc = npcs.add({
     name: 'Gyuri', line: 'Watch out for the trees, these snowmobiles can go out of control',
     at: gyuri, heading: Math.atan2(camp.spawn.x - gyuri.x, camp.spawn.z - gyuri.z), solid: true,
     look: { jacket: 0xd0702a, pants: 0x1f2328, hat: 0x1a1a1a, scarf: 0x6b6f78 },
@@ -131,7 +131,9 @@ async function start(): Promise<void> {
   // Story mode: a layer over the same world. In free roam the gates and extras are pass-throughs.
   const story = new Story();
   const storyWorld = createStoryWorld({
-    scene, world, story, sky, hud, npcs, hotel,
+    scene, world, story, sky, hud, npcs, hotel, igloo, sauna, player, gyuri: gyuriNpc,
+    iglooRot: camp.igloo.rot,
+    woodpile: new THREE.Vector3(camp.woodpile.x, 0, camp.woodpile.z),
     targets: {
       igloo: new THREE.Vector3(camp.igloo.x, 0, camp.igloo.z),
       sauna: sauna.centre,
@@ -147,7 +149,8 @@ async function start(): Promise<void> {
   const gate = storyWorld.gate;
   const providers = [
     { interaction: (p: THREE.Vector3) => npcs.continuation(p) },
-    gate(sled, 'snowmobile-run', 'Gyuri has the key'),
+    storyWorld.activities,
+    gate(sled, 'snowmobile-run', 'the snowmobile has no key'),
     gate(dogs, 'harness', 'the farm gate is shut'),
     fishing, hotel, storyWorld.door, talk,
     gate(sauna, 'heat-sauna', 'the sauna is cold'),
@@ -248,7 +251,7 @@ async function start(): Promise<void> {
     prompt.show(action?.label ?? null);
     if (action && input.pressed('KeyE')) action.run();
     prompt.status(
-      sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? hotel.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
+      storyWorld.status(player.position) ?? sled.status() ?? dogs.status(player.position) ?? fishing.status() ?? hotel.status(player.position) ?? sauna.status(player.position) ?? yurt.status(player.position) ?? igloo.status(player.position),
     );
     igloo.update(player.position);
     fx.update(dt, heat);
