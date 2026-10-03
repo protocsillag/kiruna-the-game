@@ -380,7 +380,8 @@ body.touch #hud {
 }
 
 #modes button,
-#new-story {
+#new-story,
+#exit-story {
   font: inherit;
   color: #e8edf7;
   cursor: pointer;
@@ -400,7 +401,8 @@ body.touch #hud {
   background: rgba(255, 213, 154, 0.28);
 }
 
-#new-story {
+#new-story,
+#exit-story {
   display: block;
   margin: -14px auto 22px;
   padding: 4px 10px;
@@ -412,6 +414,7 @@ body.touch #hud {
 }
 
 #new-story[hidden],
+#exit-story[hidden],
 #overlay:not(.ready) #modes,
 #overlay.started #modes,
 #overlay.started #new-story {
@@ -797,4 +800,8 @@ body.cinematic .touch-jog {
 #credits:not(.visible) button {
   visibility: hidden;
   pointer-events: none;
+}
+
+#exit-story {
+  margin: 0 auto 22px;
 }

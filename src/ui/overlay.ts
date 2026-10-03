@@ -15,13 +15,19 @@ export function setupOverlay(
   onStart: () => void,
   onPause: () => void,
   touch: boolean,
-  choose: { savedStep: number; auto: Mode | null; pick(mode: Mode, fresh: boolean): void },
+  choose: { savedStep: number; auto: Mode | null; pick(mode: Mode, fresh: boolean): void; inStory(): boolean },
 ): Overlay {
   const overlay = document.getElementById('overlay')!;
   const status = document.getElementById('status')!;
   const storyButton = document.querySelector<HTMLButtonElement>('#modes [data-mode="story"]')!;
   const freeButton = document.querySelector<HTMLButtonElement>('#modes [data-mode="free"]')!;
   const newStory = document.getElementById('new-story') as HTMLButtonElement;
+  const exitStory = document.getElementById('exit-story') as HTMLButtonElement;
+  exitStory.addEventListener('click', (e) => {
+    // Leave the story any time (progress is kept from the last finished chapter).
+    e.stopPropagation();
+    location.href = `${location.pathname}?free`;
+  });
   const verb = touch ? 'Tap' : 'Click';
   let chosen = false;
   let held = false;
@@ -52,6 +58,7 @@ export function setupOverlay(
 
   const pause = () => {
     status.textContent = `Paused · ${verb.toLowerCase()} to continue`;
+    exitStory.hidden = !choose.inStory();
     overlay.classList.remove('hidden');
     onPause();
   };

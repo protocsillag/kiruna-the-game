@@ -202,6 +202,7 @@ async function start(): Promise<void> {
       // A finished story starts over; "?free" (from the end screen) goes straight to free roam.
       savedStep: Story.savedStep() < STEPS.length ? Story.savedStep() : 0,
       auto: new URLSearchParams(location.search).has('free') ? 'free' : null,
+      inStory: () => story.active,
       pick: (mode, fresh) => {
         if (mode === 'story') storyWorld.begin(fresh || Story.savedStep() >= STEPS.length);
       },
