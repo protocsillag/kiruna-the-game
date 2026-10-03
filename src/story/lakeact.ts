@@ -7,15 +7,14 @@ import type { Story } from './state';
 
 export type Spot = { at: THREE.Vector3; heading: number; opts?: Pick<NpcDef, 'pose' | 'talkFrom' | 'talkRadius' | 'reachable'> };
 
-/** Where the wreck lies after a reload (the live crash leaves it wherever it happened). */
-const WRECK = { dx: -6, dz: 2, heading: 2.2 };
 const ARRIVE_RADIUS = 30; // metres from the trail's end below the ICEHOTEL
 
 /**
  * Chapters 3–4 people and places: Gyuri chills in the yurt (not at the snowmobile),
  * Yoppi turns up at the wreck with Gyuri, and riding the dogs to the far shore ends chapter 4.
  */
-export function createLakeAct(story: Story, npcs: Npcs, sled: Snowmobile, gyuri: Npc, gyuriSpot: () => Spot, spruce: THREE.Vector3) {
+export function createLakeAct(story: Story, npcs: Npcs, sled: Snowmobile, gyuri: Npc, gyuriSpot: () => Spot, run: { spruce: THREE.Vector3; wreck: THREE.Vector3; wreckHeading: number }) {
+  const spruce = run.spruce;
   let yoppi: Npc | null = null;
   const arrival = trailPoint(1);
   const onGround = (x: number, z: number) => new THREE.Vector3(x, groundHeight(x, z), z);
@@ -40,10 +39,9 @@ export function createLakeAct(story: Story, npcs: Npcs, sled: Snowmobile, gyuri:
       const g = gyuriSpot();
       npcs.move(gyuri, g.at, g.heading, g.opts);
       if (story.reached('crash')) {
-        const w = onGround(spruce.x + WRECK.dx, spruce.z + WRECK.dz);
-        sled.placeAt(w.x, w.z, WRECK.heading);
+        sled.placeAt(run.wreck.x, run.wreck.z, run.wreckHeading);
         sled.wrecked = true;
-        crewAt(w);
+        crewAt(run.wreck);
       }
       this.refresh();
     },

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import RAPIER, { type World } from '@dimforge/rapier3d-compat';
+import RAPIER, { type Collider, type World } from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { groundHeight, shoreDistance, WORLD_SIZE } from './terrain';
 import { MATS } from './materials';
@@ -126,4 +126,22 @@ export function createTrees(
     instanced(b.wood, barkMat, birches),
     instanced(b.frost, frostMat, birches),
   );
+}
+
+/** One spruce on its own (story mode's tree behind the snowmobile run's last ring). */
+export function createSpruce(scene: THREE.Scene, world: World, x: number, z: number, scale: number): { group: THREE.Group; collider: Collider } {
+  const s = spruceParts();
+  const y = groundHeight(x, z) - 0.1;
+  const group = new THREE.Group();
+  group.position.set(x, y, z);
+  group.scale.setScalar(scale);
+  const needleMat = new THREE.MeshStandardMaterial({ color: 0x1f3b2e, roughness: 0.95 });
+  for (const [geo, mat] of [[s.trunk, MATS.wood], [s.needles, needleMat], [s.snow, MATS.snow]] as const) {
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+  }
+  scene.add(group);
+  const collider = world.createCollider(RAPIER.ColliderDesc.cylinder(1.5, 0.22 * scale).setTranslation(x, y + 1.5, z));
+  return { group, collider };
 }

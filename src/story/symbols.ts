@@ -12,8 +12,9 @@ export const SYMBOLS = [
   { item: 'sym-train', icon: '🚋', name: 'the train number', numeral: 'VII', bar: 7 },
   { item: 'sym-lotus', icon: '🪷', name: 'a lotus', numeral: 'VI', bar: 6 },
 ];
-/** Room-local spot on the right-hand wall, a little in from the door. */
-const SPOT = { x: 3.42, y: 1.55, z: -2.2 };
+/** Room-local spot: on an ice pedestal just inside the door, to the right, facing you as you enter. */
+const SPOT = { x: 2.0, z: -2.4 };
+const REACH = 2.2;
 
 function carvingTexture(icon: string, numeral: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -37,18 +38,27 @@ function carvingTexture(icon: string, numeral: string): THREE.CanvasTexture {
 }
 
 export function createSymbols(story: Story, rooms: THREE.Group[]) {
+  const pedestalMat = new THREE.MeshStandardMaterial({ color: 0xd8f2ff, emissive: 0x4f9fe0, emissiveIntensity: 0.5, roughness: 0.2, transparent: true, opacity: 0.85 });
   const carvings = SYMBOLS.map((s, i) => {
-    const mat = new THREE.MeshStandardMaterial({
+    const mesh = new THREE.Group();
+    mesh.position.set(SPOT.x, 0, SPOT.z);
+    mesh.rotation.y = Math.PI; // face the door
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.0, 0.5), pedestalMat);
+    pedestal.position.y = 0.5;
+    const halo = new THREE.Mesh(new THREE.CircleGeometry(0.8, 32), new THREE.MeshBasicMaterial({
+      color: 0xffd59a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    halo.position.set(0, 1.55, -0.04);
+    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshStandardMaterial({
       map: carvingTexture(s.icon, s.numeral), transparent: true, alphaTest: 0.05,
-      emissive: 0x7fc8ff, emissiveIntensity: 0.6, emissiveMap: null, roughness: 0.4,
-    });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), mat);
-    mesh.position.set(SPOT.x - 0.02, SPOT.y, SPOT.z);
-    mesh.rotation.y = -Math.PI / 2; // face into the room
+      emissive: 0x9fd8ff, emissiveIntensity: 0.9, roughness: 0.4,
+    }));
+    plaque.position.y = 1.55;
+    mesh.add(pedestal, halo, plaque);
     mesh.visible = false;
     rooms[i].add(mesh);
-    const floor = rooms[i].localToWorld(new THREE.Vector3(SPOT.x - 0.9, 0, SPOT.z));
-    return { mesh, floor };
+    const floor = rooms[i].localToWorld(new THREE.Vector3(SPOT.x, 0, SPOT.z));
+    return { mesh, floor, halo, plaque };
   });
   let time = 0;
   let note = '';
@@ -72,11 +82,25 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
     },
     interaction(p: THREE.Vector3): Interaction | null {
       if (!story.at('rooms')) return null;
-      const i = carvings.findIndex((c, k) => !story.items.has(SYMBOLS[k].item) && Math.hypot(p.x - c.floor.x, p.z - c.floor.z) < 1.3);
+      const i = carvings.findIndex((c, k) => !story.items.has(SYMBOLS[k].item) && Math.hypot(p.x - c.floor.x, p.z - c.floor.z) < REACH);
       return i >= 0 ? look(i) : null;
     },
     status(): string | null {
       return noteLeft > 0 ? note : null;
+    },
+    /** How many carvings are found (for the objective line). */
+    get found(): number {
+      return SYMBOLS.filter((x) => story.items.has(x.item)).length;
+    },
+    /** The nearest carving still to find, for the beacon. */
+    target(p: THREE.Vector3): THREE.Vector3 | null {
+      if (!story.at('rooms')) return null;
+      let best: THREE.Vector3 | null = null;
+      carvings.forEach((c, k) => {
+        if (story.items.has(SYMBOLS[k].item)) return;
+        if (!best || Math.hypot(p.x - c.floor.x, p.z - c.floor.z) < Math.hypot(p.x - best.x, p.z - best.z)) best = c.floor;
+      });
+      return best;
     },
     update(dt: number): void {
       time += dt;
@@ -84,7 +108,8 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
       carvings.forEach((c, i) => {
         c.mesh.visible = story.reached('rooms');
         const found = story.items.has(SYMBOLS[i].item);
-        (c.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = found ? 0.35 : 0.5 + Math.sin(time * 2.5 + i) * 0.25;
+        (c.plaque.material as THREE.MeshStandardMaterial).emissiveIntensity = found ? 0.4 : 0.9 + Math.sin(time * 2.5 + i) * 0.3;
+        (c.halo.material as THREE.MeshBasicMaterial).opacity = found ? 0.08 : 0.3 + Math.sin(time * 2.5 + i) * 0.12;
       });
     },
   };

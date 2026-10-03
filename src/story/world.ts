@@ -73,10 +73,10 @@ export function createStoryWorld(parts: Parts) {
   const { scene, world, story, sky, hud, npcs, hotel, camp, sauna } = parts;
   const at = (x: number, z: number) => new THREE.Vector3(x, 0, z);
   const targets: Record<TargetId, THREE.Vector3> = {
+    spruce: new THREE.Vector3(), // set from the snowmobile run below
     igloo: at(camp.igloo.x, camp.igloo.z),
     sauna: sauna.centre,
     gyuri: at(camp.yurt.x, camp.yurt.z),
-    spruce: at(72, -96), // the lone spruce on the ice (main.ts plants it)
     farm: at(camp.dogFarm.x, camp.dogFarm.z),
     hotel: at(ICEHOTEL.x, ICEHOTEL.front + 3),
     fishing: at(sauna.centre.x + 9.5, sauna.centre.z - 2.5),
@@ -111,11 +111,12 @@ export function createStoryWorld(parts: Parts) {
       finale.start();
     });
   const activities = [fishKey, iglooBuild, saunaHeat, symbols, headboard, crypt];
-  const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, gyuriSpot, targets.spruce);
-  const snowRun = createSnowRun(scene, story, parts.sled, sky, targets.spruce, (at) => {
+  const snowRun = createSnowRun(scene, world, story, parts.sled, sky, (at) => {
     lakeAct.crashed(at);
     parts.onCrash();
   });
+  targets.spruce.copy(snowRun.spruce);
+  const lakeAct = createLakeAct(story, npcs, parts.sled, parts.gyuri, gyuriSpot, snowRun);
 
   /**
    * Wrap an interaction provider: while `open()` is false in story mode, the prompt it would show
@@ -158,9 +159,14 @@ export function createStoryWorld(parts: Parts) {
   const doorPrompt: Interaction = { label: 'the door is locked', run: () => {} };
   const unlockPrompt: Interaction = { label: 'unlock the door with the key', run: () => story.advance('open-door') };
 
-  const refresh = () => {
+  const objectiveText = () => {
     const step = story.current;
-    hud.objective(step?.objective ?? null);
+    if (!step) return null;
+    return step.objective + (step.id === 'rooms' ? `  (${symbols.found} / 4)` : '');
+  };
+  const refresh = () => {
+    hud.objective(objectiveText());
+    const step = story.current;
     beacon.point(step?.target ? targets[step.target] : null);
     pockets.show(story.items);
     npcs.setHidden(parts.gyuri, !story.reached('find-gyuri'));
@@ -219,6 +225,7 @@ export function createStoryWorld(parts: Parts) {
       });
       iglooBuild.begin();
       saunaHeat.begin();
+      snowRun.begin();
       lakeAct.begin();
       keyAct.begin();
       symbols.begin();
@@ -244,8 +251,9 @@ export function createStoryWorld(parts: Parts) {
       fishKey.update(dt);
       keyAct.update();
       lakeAct.update(player);
-      const run = snowRun.target();
+      const run = snowRun.target() ?? symbols.target(player);
       if (run) beacon.point(run);
+      hud.objective(objectiveText()); // keeps the carving count fresh
       carry.update();
       pockets.show(story.items);
     },

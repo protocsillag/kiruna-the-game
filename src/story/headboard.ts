@@ -98,7 +98,7 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
     interaction(p: THREE.Vector3): Interaction | null {
       if (!story.at('headboard')) return null;
       if (active) return pressIt;
-      return Math.hypot(p.x - standAt.x, p.z - standAt.z) < 1.2 ? sitDown : null;
+      return Math.hypot(p.x - standAt.x, p.z - standAt.z) < 3.0 ? sitDown : null; // anywhere near the bed
     },
     status(): string | null {
       if (noteLeft > 0) return note;
@@ -109,6 +109,11 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
       noteLeft -= dt;
       bars.forEach((b) => (b.visible = story.reached('headboard')));
       stairs.visible = story.reached('crypt');
+      if (!active && story.at('headboard')) {
+        // Gently pulse the sunburst so it reads as something to try.
+        const glow = 0.3 + (Math.sin(performance.now() / 400) * 0.5 + 0.5) * 0.4;
+        bars.forEach((b) => ((b.material as THREE.MeshBasicMaterial).opacity = glow));
+      }
       if (!active) return;
       if (!story.at('headboard')) return leave();
       const m = input.move();

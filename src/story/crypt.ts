@@ -86,7 +86,7 @@ export function createCrypt(
     },
     interaction(p: THREE.Vector3): Interaction | null {
       if (!built || !story.reached('crypt') || story.reached('end')) return null;
-      if (!below) return near(p, upstairs(), 1.3) ? descend : null;
+      if (!below) return near(p, upstairs(), 1.8) ? descend : null;
       if (near(p, bottom, 1.4)) return climb;
       if (story.items.has('flask') && near(p, kingAt, 2.0)) return give;
       return null;
