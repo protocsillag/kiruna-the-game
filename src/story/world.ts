@@ -98,7 +98,7 @@ export function createStoryWorld(parts: Parts) {
   const symbols = createSymbols(story, hotel.rooms);
   const headboard = createHeadboard(story, suite, parts.player, parts.touch);
   const finale = createFinale({
-    npcs, player: parts.player, orbit: parts.orbit, sky, king: hotel.king, touch: parts.touch, hotelDoor: hotel.door.at,
+    scene, npcs, player: parts.player, orbit: parts.orbit, sky, king: hotel.king, touch: parts.touch, hotelDoor: hotel.door.at,
     onCinematic: () => {
       parts.fishing.away = true; // Alex and Boti come along: no fishing lines across the lake
       parts.onCinematic();
@@ -242,7 +242,7 @@ export function createStoryWorld(parts: Parts) {
       finale.update(dt);
       symbols.update(dt);
       headboard.update(dt, input);
-      crypt.update();
+      crypt.update(dt);
       if (door && story.reached('rooms')) unlockDoor();
       beacon.update(dt, player);
       iglooBuild.update(dt);

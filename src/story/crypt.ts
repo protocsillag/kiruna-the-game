@@ -28,6 +28,7 @@ export function createCrypt(
   let built = false;
   let block: THREE.Mesh | null = null;
   let below = false;
+  let melt = -1; // seconds into the thaw (< 0: still frozen)
 
   const build = () => {
     built = true;
@@ -46,7 +47,7 @@ export function createCrypt(
     const light = new THREE.PointLight(0x6f9cff, 14, 12, 1.6);
     light.position.set(centre.x, floorY + 2.6, centre.z);
     scene.add(light);
-    block = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.1, 0.8), ICE);
+    block = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.1, 0.8), (ICE as THREE.Material).clone());
     block.position.set(kingAt.x, kingAt.y + 1.05, kingAt.z);
     scene.add(block);
   };
@@ -62,9 +63,7 @@ export function createCrypt(
     label: 'give the King the whiskey',
     run() {
       story.items.delete('flask');
-      if (block) block.visible = false;
-      king.character.armOverride[0] = null;
-      npcs.tell(king, [{ text: "...Ahh. Smoky. I can't lose yet. Not yet. I still want to live." }]);
+      melt = 0; // the ice melts away slowly, then he speaks (see update)
       onWake();
     },
   };
@@ -92,7 +91,22 @@ export function createCrypt(
       return null;
     },
     status: (): string | null => null,
-    update(): void {
+    update(dt = 0): void {
+      if (melt >= 0 && block) {
+        melt += dt;
+        const k = Math.min(1, melt / 3.5);
+        const m = block.material as THREE.Material & { opacity: number };
+        m.transparent = true;
+        m.opacity = 0.6 * (1 - k);
+        block.scale.set(1 - k * 0.15, 1 - k * 0.4, 1 - k * 0.15);
+        block.position.y = kingAt.y + 1.05 * (1 - k * 0.4);
+        if (k >= 1) {
+          block.visible = false;
+          block = null;
+          king.character.armOverride[0] = null;
+          npcs.tell(king, [{ text: "...Ahh. Smoky. I can't lose yet. Not yet. I still want to live." }]);
+        }
+      }
       if (built && story.reached('crypt') && king.hidden) npcs.setHidden(king, false);
     },
   };

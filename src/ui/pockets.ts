@@ -10,10 +10,14 @@ const ITEMS: Record<string, { icon: string; name: string }> = {
 
 export class Pockets {
   private el = document.createElement('div');
+  private items = document.createElement('div');
+  /** The carved symbols get their own row, so the list never runs into the objective line. */
+  private symbols = document.createElement('div');
   private shown = '';
 
   constructor() {
     this.el.id = 'pockets';
+    this.el.append(this.items, this.symbols);
     document.body.append(this.el);
   }
 
@@ -22,7 +26,8 @@ export class Pockets {
     const key = list.join(',');
     if (key === this.shown) return;
     this.shown = key;
-    this.el.innerHTML = '';
+    this.items.innerHTML = '';
+    this.symbols.innerHTML = '';
     for (const id of list) {
       const item = document.createElement('span');
       item.textContent = ITEMS[id].icon;
@@ -30,7 +35,7 @@ export class Pockets {
       const label = document.createElement('small');
       label.textContent = ITEMS[id].name;
       item.append(label);
-      this.el.append(item);
+      (id.startsWith('sym-') ? this.symbols : this.items).append(item);
     }
     this.el.classList.toggle('visible', list.length > 0);
   }

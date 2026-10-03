@@ -515,7 +515,9 @@ body.touch #objective {
   top: 14px;
   left: 18px;
   display: flex;
+  flex-direction: column;
   gap: 8px;
+  max-width: calc(50vw - 300px);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s;
@@ -524,6 +526,16 @@ body.touch #objective {
 
 #pockets.visible {
   opacity: 1;
+}
+
+#pockets > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#pockets > div:empty {
+  display: none;
 }
 
 #pockets span {

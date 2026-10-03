@@ -10,7 +10,10 @@ const SONG_URL = `${import.meta.env.BASE_URL}audio/meg-nem-veszithetek.mp3`;
 /** Everyone who comes out to see the King sing (bar guests stay inside). */
 const CAST = ['Balazs', 'Richard', 'Barbara', 'Zsofia', 'Gyuri', 'Yoppi', 'Thomasz', 'Alex', 'Boti', 'Linnéa', 'Oskar'];
 const CREDITS_AFTER = 26; // seconds outside before the credits start rolling
+const WAKE_SECONDS = 12; // in the crypt: the ice melts (3.5 s), he speaks, the song swells
+const SONG_AFTER = 3.5;
 const BOOST = 1.7;
+const STAGE_H = 0.6;
 
 const CREDITS_HTML = `
   <h1>Kiruna</h1><p class="tag">the game</p>
@@ -35,10 +38,11 @@ const CREDITS_HTML = `
  * Skip jumps ahead), a congratulations screen, and Continue loads free roam.
  */
 export function createFinale(opts: {
-  npcs: Npcs; player: Player; orbit: OrbitCamera; sky: Sky; king: Npc; touch: boolean;
+  scene: THREE.Scene; npcs: Npcs; player: Player; orbit: OrbitCamera; sky: Sky; king: Npc; touch: boolean;
   hotelDoor: THREE.Vector3; onCinematic: () => void; onEnd: () => void;
 }) {
   const { npcs, player, orbit, sky, king, touch, hotelDoor } = opts;
+  const hotelScene = opts.scene;
   const song = new Audio();
   song.preload = 'none';
   let phase: 'off' | 'waking' | 'outside' | 'credits' | 'end' = 'off';
@@ -65,14 +69,51 @@ export function createFinale(opts: {
   document.body.append(roll, end);
 
   const onGround = (x: number, z: number) => new THREE.Vector3(x, groundHeight(x, z), z);
+  /** A small wooden stage with footlights, a mic stand and two lamp posts: a concert on the ice. */
+  const stage = (at: THREE.Vector3) => {
+    const g = new THREE.Group();
+    g.position.copy(at);
+    const wood = new THREE.MeshStandardMaterial({ color: 0x5a3b22, roughness: 0.8 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0x1d1d20, roughness: 0.5, metalness: 0.6 });
+    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, px: number, py: number, pz: number) => {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(px, py, pz);
+      m.castShadow = m.receiveShadow = true;
+      g.add(m);
+      return m;
+    };
+    add(new THREE.BoxGeometry(4.2, STAGE_H, 3), wood, 0, STAGE_H / 2, 0);
+    add(new THREE.BoxGeometry(4.3, 0.06, 3.1), new THREE.MeshStandardMaterial({ color: 0x9a1a24, roughness: 0.9 }), 0, STAGE_H + 0.03, 0.1); // red carpet top
+    add(new THREE.BoxGeometry(1.4, STAGE_H * 0.5, 0.5), wood, 0, STAGE_H * 0.25, -1.75); // a step up
+    // Footlights along the front edge (the side facing the crowd, −Z).
+    const colors = [0xffd59a, 0xff8cc6, 0x9fe6c0, 0x6f9cff];
+    for (let i = 0; i < 9; i++) add(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshBasicMaterial({ color: colors[i % 4], toneMapped: false }), -1.9 + i * 0.475, STAGE_H + 0.08, -1.45);
+    // Mic stand in front of the King.
+    add(new THREE.CylinderGeometry(0.02, 0.02, 1.45, 6), metal, 0.15, STAGE_H + 0.73, -0.55);
+    add(new THREE.SphereGeometry(0.05, 10, 8), metal, 0.15, STAGE_H + 1.48, -0.55);
+    // Two lamp posts at the back corners, and warm light on the singer.
+    for (const s of [-1, 1]) {
+      add(new THREE.CylinderGeometry(0.05, 0.06, 3, 8), metal, s * 1.9, STAGE_H + 1.5, 1.3);
+      add(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd59a, toneMapped: false }), s * 1.9, STAGE_H + 3.1, 1.3);
+    }
+    const spot = new THREE.PointLight(0xffc27a, 18, 12, 1.5);
+    spot.position.set(0, STAGE_H + 3.2, -2);
+    g.add(spot);
+    g.rotation.y = 0; // the crowd and the camera are toward −Z (the hotel side)
+    hotelScene.add(g);
+  };
   const gather = () => {
     const x = hotelDoor.x;
     const z = hotelDoor.z;
     player.lock(onGround(x, z + 14), 0, 'stand');
     orbit.floor = null;
+    // Start framed on the stage and the sky; after that the camera is yours to look around.
     orbit.yaw = Math.PI;
     orbit.pitch = -0.2;
-    npcs.move(king, onGround(x, z + 21.5), Math.PI, { pose: 'stand' });
+    orbit.setZoom(8.5);
+    const stageAt = onGround(x, z + 21.5);
+    stage(stageAt);
+    npcs.move(king, stageAt.clone().setY(stageAt.y + STAGE_H), Math.PI, { pose: 'stand' });
     CAST.forEach((name, i) => {
       const npc = npcs.byName(name);
       if (!npc) return;
@@ -128,8 +169,7 @@ export function createFinale(opts: {
       phase = 'waking';
       t = 0;
       song.src = SONG_URL;
-      song.volume = 0.9;
-      song.play().catch(() => {});
+      song.load();
     },
     pause(): void {
       if (phase !== 'off' && phase !== 'end') song.pause();
@@ -140,7 +180,12 @@ export function createFinale(opts: {
     update(dt: number): void {
       if (phase === 'off') return;
       t += dt;
-      if (phase === 'waking' && t > 3.5) {
+      if (phase === 'waking' && t >= SONG_AFTER && t - dt < SONG_AFTER) {
+        song.volume = 0.25;
+        song.play().catch(() => {});
+      }
+      if (phase === 'waking' && song.volume < 0.9 && !song.paused) song.volume = Math.min(0.9, song.volume + dt * 0.15);
+      if (phase === 'waking' && t > WAKE_SECONDS) {
         phase = 'outside';
         t = 0;
         fadeThrough(gather, 900);
@@ -152,9 +197,7 @@ export function createFinale(opts: {
       if (h > 9 && h < 23.5) sky.clock.hours = Math.min(23.5, h + dt * 0.7);
       sky.auroraBoost = Math.min(BOOST, sky.auroraBoost + dt * 0.12);
       king.character.armOverride[0] = -1.8 + Math.sin(t * 1.3) * 0.35; // singing, arm up
-      orbit.yaw += Math.atan2(Math.sin(Math.PI - orbit.yaw), Math.cos(Math.PI - orbit.yaw)) * Math.min(1, dt * 2);
-      orbit.pitch += (-0.25 - orbit.pitch) * Math.min(1, dt * 2);
-      orbit.setZoom(8.5);
+      if (song.volume < 0.9 && phase !== 'end') song.volume = Math.min(0.9, song.volume + dt * 0.15);
       if (phase === 'outside' && t > CREDITS_AFTER) {
         phase = 'credits';
         creditsStart = t;

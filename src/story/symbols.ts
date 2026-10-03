@@ -20,18 +20,21 @@ function carvingTexture(icon: string, numeral: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d')!;
+  // A dark ice tile with a glowing gold edge: the symbol and numeral read in any room's light.
+  g.fillStyle = '#0e1a3a';
+  g.beginPath();
+  g.roundRect(8, 8, 240, 240, 28);
+  g.fill();
+  g.lineWidth = 8;
+  g.strokeStyle = '#ffd59a';
+  g.stroke();
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = '130px serif';
-  g.fillText(icon, 128, 100);
-  // Turn the emoji into a frosty silhouette, as if carved into the ice.
-  g.globalCompositeOperation = 'source-atop';
-  g.fillStyle = 'rgba(205, 238, 255, 0.92)';
-  g.fillRect(0, 0, 256, 256);
-  g.globalCompositeOperation = 'source-over';
-  g.fillStyle = '#e8f7ff';
-  g.font = 'bold 54px Georgia, serif';
-  g.fillText(numeral, 128, 210);
+  g.font = '110px serif';
+  g.fillText(icon, 128, 98);
+  g.fillStyle = '#ffd59a';
+  g.font = 'bold 66px Georgia, serif';
+  g.fillText(numeral, 128, 200);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -45,16 +48,21 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
     mesh.rotation.y = Math.PI; // face the door
     const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.0, 0.5), pedestalMat);
     pedestal.position.y = 0.5;
-    const halo = new THREE.Mesh(new THREE.CircleGeometry(0.8, 32), new THREE.MeshBasicMaterial({
-      color: 0xffd59a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending,
+    // The tile turns slowly on top of the pedestal, readable from both sides.
+    const plaque = new THREE.Group();
+    plaque.position.y = 1.6;
+    const face = new THREE.MeshBasicMaterial({ map: carvingTexture(s.icon, s.numeral), transparent: true, toneMapped: false });
+    for (const turn of [0, Math.PI]) {
+      const side = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), face);
+      side.rotation.y = turn;
+      side.position.z = turn ? -0.01 : 0.01;
+      plaque.add(side);
+    }
+    const halo = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), new THREE.MeshBasicMaterial({
+      color: 0xffd59a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     }));
-    halo.position.set(0, 1.55, -0.04);
-    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshStandardMaterial({
-      map: carvingTexture(s.icon, s.numeral), transparent: true, alphaTest: 0.05,
-      emissive: 0x9fd8ff, emissiveIntensity: 0.9, roughness: 0.4,
-    }));
-    plaque.position.y = 1.55;
-    mesh.add(pedestal, halo, plaque);
+    plaque.add(halo);
+    mesh.add(pedestal, plaque);
     mesh.visible = false;
     rooms[i].add(mesh);
     const floor = rooms[i].localToWorld(new THREE.Vector3(SPOT.x, 0, SPOT.z));
@@ -108,7 +116,8 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
       carvings.forEach((c, i) => {
         c.mesh.visible = story.reached('rooms');
         const found = story.items.has(SYMBOLS[i].item);
-        (c.plaque.material as THREE.MeshStandardMaterial).emissiveIntensity = found ? 0.4 : 0.9 + Math.sin(time * 2.5 + i) * 0.3;
+        c.plaque.rotation.y += dt * (found ? 0.3 : 0.8);
+        c.plaque.position.y = 1.6 + Math.sin(time * 1.5 + i) * 0.06;
         (c.halo.material as THREE.MeshBasicMaterial).opacity = found ? 0.08 : 0.3 + Math.sin(time * 2.5 + i) * 0.12;
       });
     },
