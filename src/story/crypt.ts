@@ -29,6 +29,7 @@ export function createCrypt(
   let block: THREE.Mesh | null = null;
   let below = false;
   let melt = -1; // seconds into the thaw (< 0: still frozen)
+  let noteLeft = 0;
 
   const build = () => {
     built = true;
@@ -62,6 +63,7 @@ export function createCrypt(
   const wake = () => {
     if (melt >= 0) return;
     story.items.delete('flask');
+    noteLeft = 5;
     melt = 0; // the ice melts away slowly, then he speaks (see update)
     onWake();
   };
@@ -103,8 +105,9 @@ export function createCrypt(
       if (story.items.has('flask') && melt < 0 && near(p, kingAt, 2.0)) return give;
       return null;
     },
-    status: (): string | null => null,
+    status: (): string | null => (noteLeft > 0 ? "Balazs's whiskey flask was handed over to the King" : null),
     update(dt = 0): void {
+      noteLeft -= dt;
       if (melt >= 0 && block) {
         melt += dt;
         const k = Math.min(1, melt / 3.5);
