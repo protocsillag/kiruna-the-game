@@ -37,19 +37,22 @@ const insuranceTalk: Lines = (s) => [
 ];
 
 /** Chapter 4: put each pair of huskies in the right place. A wrong answer ends it; just ask again. */
+/** Answer order changes every time you ask. */
+const shuffle = <T>(list: T[]): T[] => list.map((v) => [Math.random(), v] as const).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+
 const harnessQuiz: Lines = (s) => [
   { text: 'Yoppi sent you? Then we harness the team. Six dogs, three pairs.' },
   { text: 'Luna and Sixten are the clever ones. Pippi and Molly are young and keen. Bamse and Tor are big and strong.' },
-  { text: 'Who runs up front and leads?', choices: [
+  { text: 'Who runs up front and leads?', choices: shuffle([
     { text: 'Luna and Sixten', reply: 'Yes! Leaders need brains, not muscles.' },
     { text: 'Bamse and Tor', reply: 'They would pull us straight into the forest. Leaders need brains. Talk to me again.', stop: true },
     { text: 'Pippi and Molly', reply: 'Too young, they would chase every hare. Talk to me again.', stop: true },
-  ] },
-  { text: 'And who goes at the back, right in front of the sled?', choices: [
+  ]) },
+  { text: 'And who goes at the back, right in front of the sled?', choices: shuffle([
     { text: 'Bamse and Tor', reply: 'Exactly. The strong ones take the weight of the sled.', then: () => s.advance('harness') },
     { text: 'Pippi and Molly', reply: 'They would get squashed. The back needs strength. Talk to me again.', stop: true },
     { text: 'Luna and Sixten', reply: 'They are already leading. Talk to me again.', stop: true },
-  ] },
+  ]) },
   { text: 'Pippi and Molly in the middle, then. The team is ready. Hop on the sled!' },
 ];
 

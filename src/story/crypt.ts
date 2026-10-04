@@ -59,12 +59,25 @@ export function createCrypt(
   });
   const descend: Interaction = { label: 'go down the stairs', run: () => go(true) };
   const climb: Interaction = { label: 'climb the stairs', run: () => go(false) };
+  const wake = () => {
+    if (melt >= 0) return;
+    story.items.delete('flask');
+    melt = 0; // the ice melts away slowly, then he speaks (see update)
+    onWake();
+  };
+  // First a word with yourself: every answer is yes.
   const give: Interaction = {
-    label: 'give the King the whiskey',
+    label: 'look at the frozen King',
     run() {
-      story.items.delete('flask');
-      melt = 0; // the ice melts away slowly, then he speaks (see update)
-      onWake();
+      npcs.tell(king, [{
+        who: 'You',
+        text: 'Oh wow, here is the King, frozen solid! Would some whiskey help?',
+        choices: [
+          { text: 'Hell yeah!', then: wake },
+          { text: 'Of course.', then: wake },
+          { text: 'Whiskey was his favourite drink.', then: wake },
+        ],
+      }]);
     },
   };
   const near = (p: THREE.Vector3, q: THREE.Vector3, d: number) => Math.hypot(p.x - q.x, p.z - q.z) < d && Math.abs(p.y - q.y) < 3;
@@ -87,7 +100,7 @@ export function createCrypt(
       if (!built || !story.reached('crypt') || story.reached('end')) return null;
       if (!below) return near(p, upstairs(), 1.8) ? descend : null;
       if (near(p, bottom, 1.4)) return climb;
-      if (story.items.has('flask') && near(p, kingAt, 2.0)) return give;
+      if (story.items.has('flask') && melt < 0 && near(p, kingAt, 2.0)) return give;
       return null;
     },
     status: (): string | null => null,

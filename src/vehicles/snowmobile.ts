@@ -30,6 +30,8 @@ export class Snowmobile {
   riding = false;
   /** Story mode: on its side by the lone spruce, out of use. */
   wrecked = false;
+  /** 0→1 over the crash tumble (1 = lying still on its side). */
+  private crashT = 1;
   heading: number;
   speed = 0;
 
@@ -156,7 +158,14 @@ export class Snowmobile {
     const goal = new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, 0, -roll + lean, 'YXZ'));
     this.tilt.slerp(goal, damp(10, dt || 1));
     this.model.body.quaternion.copy(this.tilt);
-    if (this.wrecked) this.model.body.quaternion.setFromEuler(new THREE.Euler(0.12, 0, 1.15));
+    if (this.wrecked) {
+      // Tumble: a hop, nose up, then over onto its side.
+      this.crashT = Math.min(1, this.crashT + dt / 0.8);
+      const k = this.crashT;
+      const hop = Math.sin(k * Math.PI);
+      this.model.body.quaternion.setFromEuler(new THREE.Euler(0.12 * k - hop * 0.7, hop * 0.5, 1.15 * Math.min(1, k * 1.4)));
+      root.position.y += hop * 0.9;
+    }
     root.updateMatrixWorld(true);
 
     if (this.riding) {
@@ -187,6 +196,9 @@ export class Snowmobile {
     this.velocity.set(0, 0, 0);
     if (this.riding) this.dismount();
     this.wrecked = true;
+    this.crashT = 0;
+    this.spray.origin.copy(this.position).setY(this.position.y + 0.4);
+    this.spray.burst(40);
   }
 
   /** Move the parked sled (story mode puts the wreck back by the spruce after a reload). */

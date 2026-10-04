@@ -9,7 +9,7 @@ import { fadeThrough } from './fade';
 const SONG_URL = `${import.meta.env.BASE_URL}audio/meg-nem-veszithetek.mp3`;
 /** Everyone who comes out to see the King sing (bar guests stay inside). */
 const CAST = ['Balazs', 'Richard', 'Barbara', 'Zsofia', 'Gyuri', 'Yoppi', 'Thomasz', 'Alex', 'Boti', 'Linnéa', 'Oskar'];
-const CREDITS_AFTER = 26; // seconds outside before the credits start rolling
+const CREDITS_AFTER = 10; // seconds outside before the credits start rolling
 const WAKE_SECONDS = 12; // in the crypt: the ice melts (3.5 s), he speaks, the song swells
 const SONG_AFTER = 3.5;
 const BOOST = 1.7;

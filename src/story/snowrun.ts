@@ -5,6 +5,8 @@ import { createSpruce } from '../world/trees';
 import type { Snowmobile } from '../vehicles/snowmobile';
 import type { Sky } from '../sky/sky';
 import { fadeThrough } from './fade';
+import { playCrash } from '../audio/crash';
+import type { Player } from '../player/player';
 import type { Story } from './state';
 
 /** From the snowmobile's parking spot (camp) out across the ice and back toward the husky farm. */
@@ -27,7 +29,7 @@ const TOO_FAR_Z = -190;
  * rolls in; the fifth ring is where it ends: a spruce right behind it, and the crash always
  * happens. Heading off toward the ICEHOTEL ends it the same way, back at the fifth ring.
  */
-export function createSnowRun(scene: THREE.Scene, world: World, story: Story, sled: Snowmobile, sky: Sky, onCrash: (at: THREE.Vector3) => void) {
+export function createSnowRun(scene: THREE.Scene, world: World, story: Story, sled: Snowmobile, player: Player, sky: Sky, onCrash: (at: THREE.Vector3) => void) {
   const ringGeo = new THREE.TorusGeometry(2.8, 0.14, 8, 40);
   const rings = RINGS.map((p, i) => {
     const from = i ? RINGS[i - 1] : START;
@@ -57,14 +59,49 @@ export function createSnowRun(scene: THREE.Scene, world: World, story: Story, sl
   let whiteout = 0;
   let time = 0;
   let crashing = false;
+  let flash = 0;
+  /** A spruce that shoots up out of the snow right in front of you (off-course crash). */
+  let popTree: { group: THREE.Group; collider: Collider; t: number } | null = null;
 
+  const bang = () => {
+    flash = 1;
+    playCrash();
+  };
+  /** Following the rings: the fifth one ends in the spruce right behind it. */
   const crash = () => {
     crashing = true;
     sled.placeAt(wreck.x, wreck.z, heading);
     sled.crash();
+    bang();
     onCrash(wreck);
     story.advance('snowmobile-run');
   };
+  /** Off toward the ICEHOTEL: a tree appears out of the whiteout, crash, and you come to at the wreck. */
+  const crashOffCourse = () => {
+    crashing = true;
+    passed = WHITEOUT_AFTER; // the whiteout rolls in
+    const f = new THREE.Vector3(Math.sin(sled.heading), 0, Math.cos(sled.heading));
+    const at = sled.position.clone().addScaledVector(f, 3.2);
+    popTree = { ...createSpruce(scene, world, at.x, at.z, 1.4), t: 0 };
+    popTree.group.scale.setScalar(0.05);
+    window.setTimeout(() => {
+      sled.crash();
+      bang();
+      onCrash(wreck); // Yoppi and Gyuri wait at the real wreck spot
+      story.advance('snowmobile-run');
+    }, 250);
+    window.setTimeout(() => fadeThrough(() => {
+      if (popTree) {
+        scene.remove(popTree.group);
+        world.removeCollider(popTree.collider, false);
+        popTree = null;
+      }
+      sled.placeAt(wreck.x, wreck.z, heading);
+      const side = onGroundAt(wreck.x + Math.cos(heading) * 1.8, wreck.z - Math.sin(heading) * 1.8);
+      player.unlock(side);
+    }, 600), 2600);
+  };
+  const onGroundAt = (x: number, z: number) => new THREE.Vector3(x, groundHeight(x, z), z);
   const flat = (a: THREE.Vector3, b: THREE.Vector3) => Math.hypot(a.x - b.x, a.z - b.z);
 
   return {
@@ -97,17 +134,19 @@ export function createSnowRun(scene: THREE.Scene, world: World, story: Story, sl
           if (passed === rings.length - 1) crash();
           else passed++;
         } else if (sled.position.z < TOO_FAR_Z) {
-          // Off toward the ICEHOTEL: the whiteout swallows you and you come to at the spruce.
-          crashing = true;
-          passed = WHITEOUT_AFTER;
-          fadeThrough(crash, 600);
+          crashOffCourse();
         }
       }
       const want = running && passed >= WHITEOUT_AFTER ? 1 : 0;
       whiteout += (want - whiteout) * Math.min(1, dt * (want ? 0.6 : 0.25));
       if (whiteout < 0.002) whiteout = 0;
+      if (popTree && popTree.t < 1) {
+        popTree.t = Math.min(1, popTree.t + dt / 0.25);
+        popTree.group.scale.setScalar(1.4 * (0.05 + 0.95 * popTree.t) * (1 + Math.sin(popTree.t * Math.PI) * 0.15));
+      }
+      flash = Math.max(0, flash - dt * 1.6);
       sky.whiteout = whiteout;
-      white.style.opacity = (whiteout * 0.35).toFixed(3);
+      white.style.opacity = Math.min(1, whiteout * 0.35 + flash * 0.85).toFixed(3);
     },
   };
 }

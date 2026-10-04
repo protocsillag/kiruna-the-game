@@ -113,7 +113,7 @@ export function createStoryWorld(parts: Parts) {
       finale.start();
     });
   const activities = [fishKey, iglooBuild, saunaHeat, symbols, headboard, crypt];
-  const snowRun = createSnowRun(scene, world, story, parts.sled, sky, (at) => {
+  const snowRun = createSnowRun(scene, world, story, parts.sled, parts.player, sky, (at) => {
     lakeAct.crashed(at);
     parts.onCrash();
   });
