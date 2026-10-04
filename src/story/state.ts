@@ -67,6 +67,17 @@ export class Story {
     this.listeners.forEach((fn) => fn(changed));
   }
 
+  /** Jump ahead to step `id` (e.g. the headboard solved without the hints). Never goes back. */
+  advanceTo(id: string): void {
+    const target = indexOf(id);
+    if (!this.active || this.step >= target) return;
+    const before = this.chapter;
+    this.step = target;
+    const changed = this.chapter !== before;
+    if (changed) this.save();
+    this.listeners.forEach((fn) => fn(changed));
+  }
+
   set(flag: string): void {
     this.flags.add(flag);
   }

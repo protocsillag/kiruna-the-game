@@ -196,6 +196,9 @@ export class Snowmobile {
     this.body.setTranslation(t, true);
     this.body.setNextKinematicTranslation(t);
     this.body.setNextKinematicRotation(this.yaw());
+    // Move the model now too, so a dismount right after lands beside the new spot.
+    this.model.root.position.set(x, t.y - RIDE, z);
+    this.model.root.rotation.y = heading;
   }
 
   private dismount(): void {

@@ -17,7 +17,7 @@ export function createKeyAct(story: Story, npcs: Npcs, hotel: IceHotel) {
   let outside = false;
 
   const place = () => {
-    const want = !story.reached('rooms');
+    const want = !story.reached('bar');
     if (want === outside) return;
     outside = want;
     if (outside) npcs.move(linnea, out, 0); // facing the lake, where visitors come from

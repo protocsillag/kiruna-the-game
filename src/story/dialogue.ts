@@ -53,6 +53,12 @@ const harnessQuiz: Lines = (s) => [
   { text: 'Pippi and Molly in the middle, then. The team is ready. Hop on the sled!' },
 ];
 
+/** A bar guest's hint. The first one heard (step 'bar') sends you off to find the carvings. */
+const guest = (text: string): [string, Lines][] => [
+  ['bar', (s) => [{ text, then: () => s.advance('bar') }]],
+  ['rooms', say(text)],
+];
+
 /**
  * Story-mode lines per person: [first step, lines] entries, and the last entry the story has
  * reached wins. People without an entry keep their free-roam line.
@@ -132,18 +138,19 @@ const SCRIPT: Record<string, [string, Lines][]> = {
     ]],
     ['fish-key', say('Your friends fish by the sauna, I hear. Not that they ever catch anything.')],
     ['open-door', say('You found it! I would know that blue ribbon anywhere. Go on, open the door.')],
-    ['rooms', say('Thank you! Royal blue... that is the Royal Suite\'s light. The King slept there before every rehearsal.', 'He always walked the art rooms first. Every room hides a little carving, if you look closely.')],
+    ['bar', say('Thank you! Royal blue... that is the Royal Suite\'s light. The King slept there before every rehearsal.', 'The guests in the Ice Bar knew him best. Ask them, at the end of the corridor.')],
+    ['rooms', say('He always walked the art rooms before his rehearsal. Every room hides a little carving, if you look closely.')],
     ['headboard', say('The Royal Suite is the last room on the left. Mind the headboard, it is a work of art.')],
     ['crypt', say('A staircase under the bed? Twenty years here and nobody told me!')],
   ],
-  Sven: [['rooms', say('The King walked the rooms every night before rehearsal. Cat first, lotus last. Skål!')]],
-  Maja: [['rooms', say('Have you seen the cat room? Those eyes follow you. Look for the carving by the door.')]],
-  Lars: [['rooms', say('My drink froze to my mitten. And the tram in the Ice Express has a number on it, I think.')]],
-  Ingrid: [['rooms', say('The Royal Suite headboard is a sunburst. Seven bars, like the rays of a winter sun.')]],
-  Elin: [['rooms', say('Count the bars from the left, like reading. Everybody counts from the left.')]],
-  Johan: [['rooms', say('The throne is empty. This place is not the same without him.')]],
-  Kaisa: [['rooms', say('Those numbers carved in the rooms? Roman. Two, four, six, seven... I lost count after my third drink.')]],
-  Nils: [['rooms', say('The King sang the rooms in order, down the corridor. Cat, birds, train, lotus. Then bed.')]],
+  Sven: guest('The King walked the rooms every night before rehearsal. Cat first, lotus last. Skål!'),
+  Maja: guest('Have you seen the cat room? Those eyes follow you. Look for the carving by the door.'),
+  Lars: guest('My drink froze to my mitten. And the tram in the Ice Express has a number on it, I think.'),
+  Ingrid: guest('The Royal Suite headboard is a sunburst. Seven bars, like the rays of a winter sun.'),
+  Elin: guest('Count the bars from the left, like reading. Everybody counts from the left.'),
+  Johan: guest('The throne is empty. This place is not the same without him.'),
+  Kaisa: guest('Those numbers carved in the rooms? Roman. Two, four, six, seven... I lost count after my third drink.'),
+  Nils: guest('The King sang the rooms in order, down the corridor. Cat, birds, train, lotus. Then bed.'),
   Alex: [
     ['fish-key', say('A key in the lake? Take the free fur. When the line twitches, reel in. Fast!')],
     ['open-door', say('Twenty years of fishing and the first thing we catch is a key.')],

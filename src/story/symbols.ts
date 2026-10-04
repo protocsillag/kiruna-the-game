@@ -86,7 +86,7 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
 
   return {
     begin(): void {
-      carvings.forEach((c) => (c.mesh.visible = story.reached('rooms')));
+      carvings.forEach((c) => (c.mesh.visible = story.reached('bar')));
     },
     interaction(p: THREE.Vector3): Interaction | null {
       if (!story.at('rooms')) return null;
@@ -114,7 +114,7 @@ export function createSymbols(story: Story, rooms: THREE.Group[]) {
       time += dt;
       noteLeft -= dt;
       carvings.forEach((c, i) => {
-        c.mesh.visible = story.reached('rooms');
+        c.mesh.visible = story.reached('bar'); // on show from the start; collectable once the guests have talked
         const found = story.items.has(SYMBOLS[i].item);
         c.plaque.rotation.y += dt * (found ? 0.3 : 0.8);
         c.plaque.position.y = 1.6 + Math.sin(time * 1.5 + i) * 0.06;

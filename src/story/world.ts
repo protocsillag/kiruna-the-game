@@ -81,6 +81,7 @@ export function createStoryWorld(parts: Parts) {
     farm: at(camp.dogFarm.x, camp.dogFarm.z),
     hotel: at(ICEHOTEL.x, ICEHOTEL.front + 3),
     fishing: at(sauna.centre.x + 9.5, sauna.centre.z - 2.5),
+    bar: at(ICEHOTEL.x, ICEHOTEL.front - 66), // the Ice Bar at the end of the corridor
     suite: hotel.rooms[4].position.clone(), // the Royal Suite
   };
   // Gyuri leaves the snowmobile for a seat by the fire in the yurt (reserved only in story mode).
@@ -235,7 +236,7 @@ export function createStoryWorld(parts: Parts) {
       sky.hideSnowIn(hotel.bounds.clone().union(crypt.box), 2);
       npcs.setHidden(hotel.king, true); // the throne starts empty
       parts.kingSong.enabled = false; // his song belongs to the finale
-      if (!story.reached('rooms')) lockDoor();
+      if (!story.reached('bar')) lockDoor();
       refresh();
       hud.chapter(story.chapter, story.chapterTitle);
     },
@@ -245,7 +246,7 @@ export function createStoryWorld(parts: Parts) {
       symbols.update(dt);
       headboard.update(dt, input);
       crypt.update(dt);
-      if (door && story.reached('rooms')) unlockDoor();
+      if (door && story.reached('bar')) unlockDoor();
       beacon.update(dt, player);
       iglooBuild.update(dt);
       parts.igloo.background(story.at('build-igloo'), 0.2); // the King, quietly, while you build

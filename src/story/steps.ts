@@ -1,5 +1,5 @@
 /** Places an objective can point the beacon at (positions are registered in main.ts). */
-export type TargetId = 'igloo' | 'sauna' | 'gyuri' | 'spruce' | 'farm' | 'hotel' | 'fishing' | 'suite';
+export type TargetId = 'igloo' | 'sauna' | 'gyuri' | 'spruce' | 'farm' | 'hotel' | 'fishing' | 'bar' | 'suite';
 
 export interface Step {
   id: string;
@@ -38,6 +38,7 @@ export const STEPS: Step[] = [
   { id: 'linnea', chapter: 5, objective: 'Talk to Linnéa outside the ICEHOTEL', target: 'hotel' },
   { id: 'fish-key', chapter: 5, objective: 'Fish for the key with Alex and Boti', target: 'fishing' },
   { id: 'open-door', chapter: 5, objective: 'Unlock the ICEHOTEL', target: 'hotel' },
+  { id: 'bar', chapter: 6, objective: 'Head for the Ice Bar and ask the guests about the King', target: 'bar' },
   { id: 'rooms', chapter: 6, objective: 'Find the carved symbol in each of the four art rooms', target: 'hotel' },
   { id: 'headboard', chapter: 6, objective: 'Press the Royal Suite headboard bars in the right order', target: 'suite' },
   { id: 'crypt', chapter: 7, objective: 'Go down to the crypt and wake the King', target: 'suite' },

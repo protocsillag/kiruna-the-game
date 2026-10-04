@@ -65,7 +65,7 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
       note = `Bar ${pick + 1} glows and stays lit.`;
       if (entered >= ORDER.length) {
         note = 'Something rumbles under the bed... a staircase opens!';
-        story.advance('headboard');
+        story.advanceTo('crypt'); // also works straight from the bar, without the hints
         leave();
       }
     } else {
@@ -84,6 +84,8 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
     },
   };
   const pressIt: Interaction = { label: 'press the bar', run: press };
+  /** Chapter 6, from the moment the hotel opens until the staircase is found. */
+  const open = () => story.reached('bar') && !story.reached('crypt');
 
   return {
     /** Where the stairs come back up. */
@@ -92,11 +94,11 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
       return story.reached('crypt');
     },
     begin(): void {
-      bars.forEach((b) => (b.visible = story.reached('headboard')));
+      bars.forEach((b) => (b.visible = story.reached('bar')));
       stairs.visible = story.reached('crypt');
     },
     interaction(p: THREE.Vector3): Interaction | null {
-      if (!story.at('headboard')) return null;
+      if (!open()) return null;
       if (active) return pressIt;
       return Math.hypot(p.x - standAt.x, p.z - standAt.z) < 3.0 ? sitDown : null; // anywhere near the bed
     },
@@ -107,15 +109,15 @@ export function createHeadboard(story: Story, suite: THREE.Group, player: Player
     },
     update(dt: number, input: Steer): void {
       noteLeft -= dt;
-      bars.forEach((b) => (b.visible = story.reached('headboard')));
+      bars.forEach((b) => (b.visible = story.reached('bar')));
       stairs.visible = story.reached('crypt');
-      if (!active && story.at('headboard')) {
+      if (!active && open()) {
         // Gently pulse the sunburst so it reads as something to try.
         const glow = 0.3 + (Math.sin(performance.now() / 400) * 0.5 + 0.5) * 0.4;
         bars.forEach((b) => ((b.material as THREE.MeshBasicMaterial).opacity = glow));
       }
       if (!active) return;
-      if (!story.at('headboard')) return leave();
+      if (!open()) return leave();
       const m = input.move();
       const steer = m.side > 0.5 ? 1 : m.side < -0.5 ? -1 : 0;
       if (steer && steer !== lastSteer) {
