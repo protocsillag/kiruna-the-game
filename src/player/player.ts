@@ -14,8 +14,8 @@ const HALF_HEIGHT = 0.55;
 const RADIUS = 0.3;
 const SKIN = 0.02;
 const FEET = HALF_HEIGHT + RADIUS + SKIN; // body centre → feet
-const WALK = 2.2;
-const JOG = 4.6;
+const WALK = 4.6; // m/s (was the old jog speed)
+const JOG = 6.5;
 const GRAVITY = 18;
 const BOUND = WORLD_SIZE / 2 - 30;
 
