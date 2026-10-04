@@ -19,16 +19,26 @@ export class OrbitCamera {
   /** Story mode's crypt lies under the ground: keep the camera above this floor instead. */
   floor: number | null = null;
   private idle = 0;
+  /** A yaw to swing round to on its own (until the player looks around themselves). */
+  private aimYaw: number | null = null;
   private target = new THREE.Vector3();
   private initialised = false;
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
   look(dx: number, dy: number, wheel: number): void {
-    if (dx || dy) this.idle = 0;
+    if (dx || dy) {
+      this.idle = 0;
+      this.aimYaw = null;
+    }
     this.yaw -= dx * SENSITIVITY;
     this.pitch = clamp(this.pitch + dy * SENSITIVITY, -0.3, 1.2);
     this.zoom = clamp(this.zoom + wheel * 0.8, 2.5, 14);
+  }
+
+  /** Ease round to look along `yaw` (e.g. so a speech bubble ends up on screen). */
+  aim(yaw: number): void {
+    this.aimYaw = yaw;
   }
 
   setZoom(z: number): void {
@@ -51,6 +61,11 @@ export class OrbitCamera {
   }
 
   update(dt: number, focus: THREE.Vector3, world: World, include: (c: Collider) => boolean): void {
+    if (this.aimYaw !== null) {
+      const delta = Math.atan2(Math.sin(this.aimYaw - this.yaw), Math.cos(this.aimYaw - this.yaw));
+      this.yaw += delta * damp(4, dt);
+      if (Math.abs(delta) < 0.01) this.aimYaw = null;
+    }
     const goal = focus.clone().setY(focus.y + LOOK_HEIGHT);
     if (!this.initialised) {
       this.target.copy(goal);

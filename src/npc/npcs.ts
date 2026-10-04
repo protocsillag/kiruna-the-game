@@ -71,6 +71,8 @@ export class Npcs {
   script: Script | null = null;
   /** Shown under reply choices. */
   choiceHint = '';
+  /** Someone starts talking (main.ts may turn the camera toward them). */
+  onTalk: ((npc: Npc) => void) | null = null;
   private time = 0;
   private v = new THREE.Vector3();
 
@@ -147,6 +149,7 @@ export class Npcs {
     const lines = this.script?.(npc.name) ?? [{ text: npc.line }];
     this.convo = { npc, lines, i: 0, pick: 0 };
     this.show();
+    this.onTalk?.(npc);
   }
 
   /** Story mode moves people around (e.g. Gyuri away from the snowmobile). Pose/talk spot reset unless given. */

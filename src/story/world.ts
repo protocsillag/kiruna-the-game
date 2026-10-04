@@ -219,6 +219,7 @@ export function createStoryWorld(parts: Parts) {
     /** Called once when the player picks Story on the title card. */
     begin(fresh: boolean): void {
       story.begin(fresh);
+      document.body.classList.add('story'); // phone portrait layout tweaks (style.css)
       sky.aurora = false;
       sky.clock.nightOnly = true;
       sky.clock.hours = STORY_START_HOUR;

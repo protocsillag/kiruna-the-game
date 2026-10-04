@@ -809,3 +809,46 @@ body.cinematic .touch-jog {
   transform: translateX(-50%);
   margin: 0;
 }
+
+/* ---------- Phones held upright, story mode only ---------- */
+@media (orientation: portrait) {
+  /* Only the pause button stays up top: the bar is free for the objective. */
+  body.touch.story .touch-bar .touch-btn:nth-child(n + 2) {
+    display: none;
+  }
+
+  body.touch.story #objective {
+    max-width: calc(100vw - 190px);
+  }
+
+  /* Pockets stack down the left edge, under the pause button. */
+  body.touch.story #pockets {
+    top: calc(12px + 46px + 12px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+    max-width: none;
+  }
+
+  body.touch.story #pockets > div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* The carved symbols keep their roman numeral. */
+  body.touch.story #pockets .sym small {
+    display: inline;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffd59a;
+  }
+
+  /* Orange status text well above the (two-line) action button. */
+  body.touch.story #status-line {
+    bottom: calc(170px + env(safe-area-inset-bottom));
+    max-width: 80vw;
+    text-align: center;
+  }
+
+  body.touch.story #bite {
+    bottom: calc(230px + env(safe-area-inset-bottom));
+  }
+}

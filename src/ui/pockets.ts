@@ -35,7 +35,9 @@ export class Pockets {
       const label = document.createElement('small');
       label.textContent = ITEMS[id].name;
       item.append(label);
-      (id.startsWith('sym-') ? this.symbols : this.items).append(item);
+      const sym = id.startsWith('sym-');
+      item.classList.toggle('sym', sym);
+      (sym ? this.symbols : this.items).append(item);
     }
     this.el.classList.toggle('visible', list.length > 0);
   }

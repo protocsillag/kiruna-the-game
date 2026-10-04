@@ -143,6 +143,14 @@ async function start(): Promise<void> {
     onCrash: () => fx.triggerShiver(),
   });
   npcs.choiceHint = touch ? 'Tap an answer' : 'A / D to choose · E to answer';
+  // Phones held upright, story mode: indoors (sauna, yurt) swing the camera behind you so the
+  // person you talk to, and their speech bubble, are in view.
+  const portrait = matchMedia('(orientation: portrait)');
+  npcs.onTalk = (npc) => {
+    if (!touch || !story.active || !portrait.matches || !npc.reachable) return;
+    const at = npc.character.root.position;
+    orbit.aim(Math.atan2(player.position.x - at.x, player.position.z - at.z));
+  };
   const gate = storyWorld.gate;
   const providers = [
     { interaction: (p: THREE.Vector3) => npcs.continuation(p) },
