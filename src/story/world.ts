@@ -27,7 +27,7 @@ import type { IceHotel } from '../icehotel/icehotel';
 import type { Sky } from '../sky/sky';
 import type { Hud } from '../ui/hud';
 import { Beacon } from './beacon';
-import { storyScript } from './dialogue';
+import { GUESTS_NEEDED, guestsHeard, storyScript } from './dialogue';
 import type { Story } from './state';
 import type { TargetId } from './steps';
 
@@ -164,6 +164,7 @@ export function createStoryWorld(parts: Parts) {
   const objectiveText = () => {
     const step = story.current;
     if (!step) return null;
+    if (step.id === 'bar') return `${step.objective}  (${guestsHeard(story)} / ${GUESTS_NEEDED})`;
     return step.objective + (step.id === 'rooms' ? `  (${symbols.found} / 4)` : '');
   };
   const refresh = () => {
